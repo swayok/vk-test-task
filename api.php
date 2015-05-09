@@ -1,10 +1,9 @@
 <?php
 
-require_once __DIR__ . '/src/configs/error.handling.php';
-require_once __DIR__ . '/src/lib/http.codes.php';
+require_once __DIR__ . '/src/configs/bootstrap.php';
 
 if (empty($_GET['action'])) {
-    HttpCodes::setHttpCode(HttpCodes::NOT_FOUND);
+    Utils\setHttpCode(Utils\HTTP_CODE_NOT_FOUND);
     exit;
 }
 
@@ -16,12 +15,12 @@ $allowedActions = array(
 $action = strtolower($_GET['action']);
 
 if (!isset($allowedActions[$action])) {
-    HttpCodes::setHttpCode(HttpCodes::NOT_FOUND);
+    Utils\setHttpCode(Utils\HTTP_CODE_NOT_FOUND);
     exit;
 }
 
 require_once __DIR__ . '/src/api.actions.php';
-HttpCodes::setHttpCode(HttpCodes::OK);
+Utils\setHttpCode(Utils\HTTP_CODE_OK);
 $function = 'Api\\' . $allowedActions[$action];
 $response = $function();
 

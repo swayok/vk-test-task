@@ -8,7 +8,7 @@ function isPost() {
     return strtolower($_SERVER['REQUEST_METHOD']) === 'post';
 }
 
-require_once __DIR__ . '/configs/strings.php';
+require_once __DIR__ . '/configs/dictionary.php';
 
 function loginStatus() {
     if (!empty($_SESSION['user'])) {
@@ -18,26 +18,26 @@ function loginStatus() {
     } else if (!empty($_SESSION['admin'])) {
         return $_SESSION['admin'] + array('view' => 'managers_list');
     } else {
-        \HttpCodes::setHttpCode(\HttpCodes::UNAUTHORIZED);
+        \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
         return array(
-            'message' => \Strings::translate('Authorisation required')
+            'message' => \Dictionary\translate('Authorisation required')
         );
     }
 }
 
 function login() {
     if (!isPost()) {
-        \HttpCodes::setHttpCode(\HttpCodes::NOT_FOUND);
+        \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
     }
     $errors = array();
     if (empty($_POST['login'])) {
-        $errors['login'] = \Strings::translate('Enter Login');
+        $errors['login'] = \Dictionary\translate('Enter Login');
     }
     if (empty($_POST['password'])) {
-        $errors['password'] = \Strings::translate('Enter Password');
+        $errors['password'] = \Dictionary\translate('Enter Password');
     }
     if (!empty($errors)) {
-        \HttpCodes::setHttpCode(\HttpCodes::INVALID);
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
         return array('errors' => $errors);
     }
 

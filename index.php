@@ -1,3 +1,6 @@
+<?php
+require_once __DIR__ . '/src/configs/bootstrap.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
