@@ -18,6 +18,6 @@
             <label for="user-password"><?php echo \Dictionary\translate('Password'); ?></label>
             <input name="password" type="password" id="user-password" required class="form-control">
         </div>
-        <button type="submit" class="btn btn-lg btn-primary btn-block">Sign in</button>
+        <button type="submit" class="btn btn-lg btn-primary btn-block"><?php echo \Dictionary\translate('Log-In'); ?></button>
     </div>
 </form>

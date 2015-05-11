@@ -1,6 +1,7 @@
 var App = {
     container: '#page-content',
     messagesContainer: '#page-messages',
+    baseUrl: '/',
     apiUrl: '/api.php?action=',
     urlArgs: {},
     routes: {},
@@ -9,7 +10,10 @@ var App = {
         status: 'status',
         login: 'login'
     },
-    currentRoute: null
+    currentRoute: null,
+    animationsDurationMs: 150,
+    userInfo: {},
+    baseBrowserTitle: ''
 };
 
 App.init = function (urlArgs) {
@@ -27,9 +31,17 @@ App.init = function (urlArgs) {
     };
 
     $(document).ready(function () {
+        App.baseBrowserTitle = document.title;
         App.container = $(App.container);
         App.messagesContainer = $('<div id="page-messages">').hide();
         $(document.body).prepend(App.messagesContainer);
+
+        window.addEventListener('popstate', function(event){
+            if (event.state && event.state.route) {
+                App.setRoute(event.state.route);
+            }
+        }, false);
+
         App.isLoggedIn();
     });
 };
@@ -41,20 +53,18 @@ App.isLoggedIn = function () {
         dataType: 'json'
     }).done(function (json) {
         if (!!App.urlArgs.route && !!App.routes[App.urlArgs.route]) {
-            App.currentRoute = App.urlArgs.route;
+            App.setRoute(App.urlArgs.route);
         } else if (!!json.route && !!App.routes[json.route]) {
-            App.currentRoute = json.route;
+            App.setRoute(json.route);
         } else {
-            App.currentRoute = 'login';
+            App.setRoute('login');
         }
-        App.loadCurrentRoute();
     }).fail(function (xhr) {
-        App.currentRoute = 'login';
-        App.loadCurrentRoute();
+        App.setRoute('login');
     });
 };
 
-App.setRoute = function (route, changeUrl, message) {
+App.setRoute = function (route, doNotChangeUrl, message) {
     if (!!message) {
         if ($.isPlainObject(message)) {
             App.setMessage(message.message, message.type);
@@ -63,6 +73,49 @@ App.setRoute = function (route, changeUrl, message) {
         }
     } else {
         App.hideMessage();
+    }
+    if (!App.routes[route]) {
+        throw 'Unknown route [' + route + '] detected';
+    }
+    if (App.currentRoute !== route) {
+        App.currentRoute = route;
+        var routeInfo = App.routes[route];
+        if (!App.loadedRoutes[route]) {
+            $.ajax({
+                url: routeInfo.url,
+                cache: true
+            }).done(function (html) {
+                // use <h1> text as browser title
+                var browserTitle = App.baseBrowserTitle;
+                var matches = html.match(/<h1[^>]*>([\s\S]+)<\/h1/i);
+                if (matches && matches.length) {
+                    browserTitle = matches[1] + ' - ' + browserTitle;
+                }
+                document.title = browserTitle;
+
+                var template = '<div class="content-wrapper" id="' + route + '-action-container">' + html + '</div>';
+                if (!!routeInfo.handlebars) {
+                    template = Handlebars.compile(template);
+                } else {
+                    template = $.parseHTML(template);
+                }
+
+                if (!!routeInfo.cache) {
+                    App.loadedRoutes[route] = {
+                        template: template,
+                        browserTitle: browserTitle
+                    };
+                }
+
+                routeInfo.controller(template, false);
+            });
+        } else {
+            document.title = App.loadedRoutes[routeInfo.url].template.browserTitle;
+            routeInfo.controller(App.loadedRoutes[routeInfo.url].template, true);
+        }
+        if (!doNotChangeUrl) {
+            window.history.pushState({route: App.currentRoute}, null, App.baseUrl + '?route=' + route);
+        }
     }
 };
 
@@ -78,35 +131,13 @@ App.setMessage = function (message, type) {
                 type = 'info';
             }
         }
-        App.messagesContainer.attr('class', 'bg-' + type).fadeIn(200);
+        App.messagesContainer.attr('class', 'bg-' + type);
+        App.messagesContainer.slideDown(App.animationsDurationMs);
     });
 };
 
 App.hideMessage = function () {
-    return App.messagesContainer.fadeOut(200);
-};
-
-App.loadCurrentRoute = function () {
-    var routeInfo = App.routes[App.currentRoute];
-    if (!App.loadedRoutes[App.currentRoute]) {
-        $.ajax({
-            url: routeInfo.url,
-            cache: true
-        }).done(function (html) {
-            var template = '<div class="content-wrapper" id="' + App.currentRoute + '-action-container">' + html + '</div>';
-            if (!!routeInfo.handlebars) {
-                template = Handlebars.compile(template);
-            } else {
-                template = $.parseHTML(template);
-            }
-            if (!!routeInfo.cache) {
-                App.loadedRoutes[App.currentRoute] = template;
-            }
-            routeInfo.controller(template, false);
-        });
-    } else {
-        routeInfo.controller(App.loadedRoutes[routeInfo.url], true);
-    }
+    return App.messagesContainer.slideUp(App.animationsDurationMs);
 };
 
 App.collectFormData = function (form) {
@@ -149,13 +180,16 @@ App.isNotAuthorisationFailure = function (xhr) {
     return true;
 };
 
-App.removeFormValidationErrors = function (form) {
+App.removeFormValidationErrors = function (form, hideMessage) {
+    if (!!hideMessage) {
+        App.hideMessage();
+    }
     form.find('.has-error').removeClass('has-error');
-    return form.find('.error-text').slideUp(100);
+    return form.find('.error-text').slideUp(App.animationsDurationMs);
 };
 
 App.applyFormValidationErrors = function (form, xhr) {
-    $.when(App.removeFormValidationErrors(form)).done(function () {
+    $.when(App.removeFormValidationErrors(form, true)).done(function () {
         var response = JSON.parse(xhr.responseText);
         if (!response) {
             App.setMessage(xhr.responseText);
@@ -168,10 +202,14 @@ App.applyFormValidationErrors = function (form, xhr) {
                     if (form[0][inputName]) {
                         var errorEl = $('<div class="error-text bg-danger">' + response.errors[inputName] + '</div>').hide();
                         $(form[0][inputName]).parent().addClass('has-error').append(errorEl);
-                        errorEl.slideDown(100);
+                        errorEl.slideDown(App.animationsDurationMs);
                     }
                 }
             }
         }
     });
+};
+
+App.setUser = function (userInfo) {
+    App.userInfo = userInfo;
 };
