@@ -1,0 +1,29 @@
+form .form-control {
+    position: relative;
+    z-index: 2;
+}
+
+form .error-text {
+    text-align: center;
+    padding: 6px 6px 2px 6px;
+    margin-top: -4px;
+    z-index: 1;
+
+    -webkit-border-radius: 0 0 4px 4px;
+    -moz-border-radius: 0 0 4px 4px;
+    border-radius: 0 0 4px 4px;
+}
+
+#login-form {
+    width: 300px;
+    margin: 100px auto 0 auto;
+}
+
+#page-messages {
+    width: 100%;
+}
+
+#page-messages .container {
+    padding: 20px 80px 20px 80px;
+    text-align: center;
+}

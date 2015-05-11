@@ -4,19 +4,13 @@ namespace Api;
 
 session_start();
 
-function isPost() {
-    return strtolower($_SERVER['REQUEST_METHOD']) === 'post';
-}
-
-require_once __DIR__ . '/configs/dictionary.php';
-
 function loginStatus() {
-    if (!empty($_SESSION['user'])) {
-        return $_SESSION['user'] + array('view' => 'add_task');
-    } else if (!empty($_SESSION['manager'])) {
-        return $_SESSION['manager'] + array('view' => 'tasks_list');
+    if (!empty($_SESSION['client'])) {
+        return $_SESSION['client'] + array('route' => 'add-task');
+    } else if (!empty($_SESSION['executor'])) {
+        return $_SESSION['executor'] + array('route' => 'tasks-list');
     } else if (!empty($_SESSION['admin'])) {
-        return $_SESSION['admin'] + array('view' => 'managers_list');
+        return $_SESSION['admin'] + array('route' => 'managers-list');
     } else {
         \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
         return array(
@@ -26,19 +20,22 @@ function loginStatus() {
 }
 
 function login() {
-    if (!isPost()) {
+    if (!\Request\isPost()) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
     }
     $errors = array();
-    if (empty($_POST['login'])) {
-        $errors['login'] = \Dictionary\translate('Enter Login');
+    if (empty($_POST['role'])) {
+        $errors['role'] = \Dictionary\translate('Select role');
+    }
+    if (empty($_POST['email'])) {
+        $errors['email'] = \Dictionary\translate('Enter email');
     }
     if (empty($_POST['password'])) {
-        $errors['password'] = \Dictionary\translate('Enter Password');
+        $errors['password'] = \Dictionary\translate('Enter password');
     }
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('errors' => $errors);
+        return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
     }
 
     return array();

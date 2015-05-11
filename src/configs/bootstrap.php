@@ -8,7 +8,9 @@ require_once __DIR__ . '/../lib/error.reporter.php';
 ini_set('display_errors', false);
 ini_set('display_startup_errors', true);
 
-require_once __DIR__ . '/../lib/antihack.php';
 require_once __DIR__ . '/../lib/utils.php';
+require_once __DIR__ . '/../lib/antihack.php';
+require_once __DIR__ . '/../lib/request.php';
 require_once __DIR__ . '/../lib/storage.php';
 require_once __DIR__ . '/../lib/debug.php';
+require_once 'dictionary.php';
