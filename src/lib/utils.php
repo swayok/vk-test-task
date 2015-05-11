@@ -18,3 +18,7 @@ function setHttpCode ($httpCode) {
         throw new \Exception('Invalid HTTP Code: ' . $httpCode);
     }
 }
+
+function hashPassword ($password) {
+    return hash('sha256', SALT . $password);
+}

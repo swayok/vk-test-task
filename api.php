@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/src/configs/bootstrap.php';
+require_once __DIR__ . '/src/configs/databases.php';
 
 if (empty($_GET['action'])) {
     Utils\setHttpCode(Utils\HTTP_CODE_NOT_FOUND);
