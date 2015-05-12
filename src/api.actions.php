@@ -6,11 +6,11 @@ session_start();
 
 function loginStatus() {
     if (!empty($_SESSION['client'])) {
-        return $_SESSION['client'] + array('route' => 'add-task');
+        return $_SESSION['client'];
     } else if (!empty($_SESSION['executor'])) {
-        return $_SESSION['executor'] + array('route' => 'tasks-list');
+        return $_SESSION['executor'];
     } else if (!empty($_SESSION['admin'])) {
-        return $_SESSION['admin'] + array('route' => 'managers-list');
+        return $_SESSION['admin'];
     } else {
         \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
         return array(

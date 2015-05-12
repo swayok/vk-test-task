@@ -59,7 +59,7 @@ App.isLoggedIn = function () {
         cache: false,
         dataType: 'json'
     }).done(function (json) {
-        if (!!App.urlArgs.route && !!App.routes[App.urlArgs.route]) {
+        if (!!App.urlArgs.route && !!App.routes[App.urlArgs.route] && App.urlArgs.route !== 'login') {
             App.setRoute(App.urlArgs.route);
         } else if (!!json.route && !!App.routes[json.route]) {
             App.setRoute(json.route);
