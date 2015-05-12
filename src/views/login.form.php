@@ -1,4 +1,3 @@
-<?php require_once __DIR__ . '/../src/configs/bootstrap.view.php'; ?>
 <form id="login-form" onsubmit="return false;">
     <h1><?php echo \Dictionary\translate('Authorisation'); ?></h1>
     <div class="inputs">

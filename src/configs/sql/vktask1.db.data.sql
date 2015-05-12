@@ -1,0 +1,2 @@
+INSERT INTO `vktask1`.`admins` (`id`, `email`, `password`, `is_active`, `created_by`, `created_at`)
+  VALUES (NULL, 'admin@vktask.com', '7b907c500e91ee7fa6a6796a12cb18a59e591528bfb7133f16ffd92eccc8ba3f', '1', NULL, CURRENT_TIMESTAMP);

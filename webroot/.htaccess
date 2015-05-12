@@ -1,0 +1,5 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^.*\.(htaccess|htpasswd|ini|fla|psd|log|sh|zip|exe|pl|jsp|asp|htm|cgi|py)$ - [F]
+    RewriteRule ^.*?/.*\.(php.*)$ - [F]
+</IfModule>

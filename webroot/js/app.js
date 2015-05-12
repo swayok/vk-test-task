@@ -2,6 +2,7 @@ var App = {
     container: '#page-content',
     messagesContainer: '#page-messages',
     baseUrl: '/',
+    viewsUrl: '/get_view.php?view=',
     apiUrl: '/api.php?action=',
     urlArgs: {},
     routes: {},
@@ -23,7 +24,7 @@ App.init = function (urlArgs) {
     
     App.routes = {
         login: {
-            url: '/views/login.form.php',
+            url: App.viewsUrl + 'login.form',
             handlebars: false,
             controller: AppController.loginForm,
             cache: true
@@ -81,6 +82,7 @@ App.setRoute = function (route, doNotChangeUrl, message) {
         App.currentRoute = route;
         var routeInfo = App.routes[route];
         if (!App.loadedRoutes[route]) {
+            App.container.addClass('loading');
             $.ajax({
                 url: routeInfo.url,
                 cache: true
@@ -108,6 +110,12 @@ App.setRoute = function (route, doNotChangeUrl, message) {
                 }
 
                 routeInfo.controller(template, false);
+            }).fail(function (xhr) {
+                if (!App.isAuthorisationFailure(xhr)) {
+                    App.setMessage(xhr.responseText, 'danger');
+                }
+            }).then(function () {
+                App.container.removeClass('loading');
             });
         } else {
             document.title = App.loadedRoutes[routeInfo.url].template.browserTitle;

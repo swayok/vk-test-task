@@ -1,3 +1,3 @@
 <?php
 
-require_once __DIR__ . '/src/configs/bootstrap.php';
+include __DIR__ . '/webroot/tests.php';
