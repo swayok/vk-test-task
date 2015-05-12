@@ -28,6 +28,12 @@ App.init = function (urlArgs) {
             handlebars: false,
             controller: AppController.loginForm,
             cache: true
+        },
+        admin_dashboard: {
+            url: App.viewsUrl + 'admin.dashboard',
+            handlebars: false,
+            controller: AppController.adminDashboard,
+            cache: true
         }
     };
 
@@ -75,8 +81,10 @@ App.setRoute = function (route, doNotChangeUrl, message) {
     } else {
         App.hideMessage();
     }
-    if (!App.routes[route]) {
-        throw 'Unknown route [' + route + '] detected';
+    if (!route || !App.routes[route]) {
+        var error = 'Unknown route [' + route + '] detected';
+        App.setMessage(error, 'danger');
+        throw error;
     }
     if (App.currentRoute !== route) {
         App.currentRoute = route;
@@ -114,8 +122,10 @@ App.setRoute = function (route, doNotChangeUrl, message) {
                 if (!App.isAuthorisationFailure(xhr)) {
                     App.setMessage(xhr.responseText, 'danger');
                 }
-            }).then(function () {
-                App.container.removeClass('loading');
+            }).always(function () {
+                setTimeout(function () {
+                    App.container.removeClass('loading');
+                }, 500);
             });
         } else {
             document.title = App.loadedRoutes[routeInfo.url].template.browserTitle;
@@ -166,7 +176,9 @@ App.collectFormData = function (form) {
 
 App.getApiUrl = function (action) {
     if (!App.apiActions[action]) {
-        throw 'Api action [' + action + '] not defined';
+        var error = 'Api action [' + action + '] not defined';
+        App.setMessage(error, 'danger');
+        throw error;
     }
     return App.apiUrl + action;
 };

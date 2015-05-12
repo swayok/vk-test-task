@@ -8,6 +8,7 @@ AppController.loginForm = function (element, isFromCache) {
         var form = App.container.find('form');
         form.on('submit', function (event) {
             App.removeFormValidationErrors(form, true);
+            form.addClass('loading');
             var data = App.collectFormData(form);
             $.ajax({
                 url: App.getApiUrl('login'),
@@ -21,8 +22,16 @@ AppController.loginForm = function (element, isFromCache) {
                 if (App.isNotAuthorisationFailure(xhr)) {
                     App.applyFormValidationErrors(form, xhr);
                 }
+            }).always(function () {
+                setTimeout(function () {
+                    form.removeClass('loading');
+                }, 500);
             });
             return false;
         })
     }
+};
+
+AppController.adminDashboard = function (template, isFromCache) {
+    App.container.html('').append(template);
 };

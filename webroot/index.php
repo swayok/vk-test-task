@@ -15,8 +15,10 @@ require_once __DIR__ . '/../src/configs/bootstrap.php';
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-    <div id="page-content" class="container">
+    <div class="container">
+        <div id="page-content">
 
+        </div>
     </div>
 
     <script src="/js/jquery/jquery-2.1.4.min.js"></script>

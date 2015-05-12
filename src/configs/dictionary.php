@@ -8,12 +8,14 @@ $__TRANSLATIONS = array(
     'Role' => 'Роль',
     'Client' => 'Заказчик',
     'Executor' => 'Исполниитель',
-    'Admin' => 'Админимстратор',
+    'Admin' => 'Администратор',
     'Log-In' => 'Войти',
     'Enter email' => 'Введите Email-адрес',
     'Enter password' => 'Введите пароль',
     'Select role' => 'Выберите роль',
-    'Form contains invalid data' => 'Форма содержит недопустимые данные'
+    'Form contains invalid data' => 'Форма содержит недопустимые данные',
+    'Authorisation error: user not found' => 'Ошибка авторизации: пользователь не найден',
+    'Value not found' => 'Значение не найдено'
 );
 
 function translate($string) {

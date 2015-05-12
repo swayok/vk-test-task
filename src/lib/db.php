@@ -26,7 +26,7 @@ function addDbConnectionConfig($config, $name = 'default') {
         'encoding' => 'UTF-8',
         'connection' => null
     );
-    $GLOBALS['__DB_CONNECTIONS'] = array_replace($defaultConfig, $config);
+    $GLOBALS['__DB_CONNECTIONS'][$name] = array_replace($defaultConfig, $config);
 }
 
 /**
@@ -96,6 +96,19 @@ function select($query, $connectionName = 'default') {
         $rows[] = $row;
     }
     return $rows;
+}
+
+/**
+ * @param string $query
+ * @param array $values
+ * @param string $connectionName
+ * @return bool
+ */
+function smartSelect($query, $values = array(), $connectionName = 'default') {
+    foreach ($values as $key => $value) {
+        $query = str_replace(':' . $key, quoteValue($value, $connectionName), $query);
+    }
+    return select($query, $connectionName);
 }
 
 /**
