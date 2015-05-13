@@ -10,7 +10,7 @@
             </select>
         </div>
         <div class="form-group">
-            <label for="user-email"><?php echo \Dictionary\translate('Email'); ?></label>
+            <label for="user-email"><?php echo \Dictionary\translate('E-mail'); ?></label>
             <input name="email" type="email" id="user-email" required autofocus class="form-control">
         </div>
         <div class="form-group">

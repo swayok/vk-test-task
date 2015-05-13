@@ -5,6 +5,9 @@ namespace Api;
 session_start();
 
 function loginStatus() {
+    if (!\Request\isGet()) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+    }
     if (!empty($_SESSION['client'])) {
         return $_SESSION['client'];
     } else if (!empty($_SESSION['executor'])) {
@@ -23,20 +26,36 @@ function login() {
     if (!\Request\isPost()) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
     }
-    $errors = array();
-    if (empty($_POST['role']) || !in_array($_POST['role'], array('admin', 'executor', 'client'))) {
-        $errors['role'] = \Dictionary\translate('Select role');
-    }
-    if (empty($_POST['email'])) {
-        $errors['email'] = \Dictionary\translate('Enter email');
-    }
-    if (empty($_POST['password'])) {
-        $errors['password'] = \Dictionary\translate('Enter password');
-    }
+    $errors = \Utils\validateData($_POST, array(
+        'role' => array(
+            'required' => true,
+            'regexp' => '%^admin|executor|client$%i',
+            'messages' => array(
+                'required' => \Dictionary\translate('Select role'),
+                'regexp' => \Dictionary\translate('Select role')
+            )
+        ),
+        'email' => array(
+            'required' => true,
+            'type' => 'email',
+            'messages' => array(
+                'required' => \Dictionary\translate('Enter e-mail'),
+                'regexp' => \Dictionary\translate('Invalid e-mail')
+            )
+        ),
+        'password' => array(
+            'required' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('Enter password'),
+            )
+        )
+    ));
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
         return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
     }
+
+    $_POST['role'] = strtolower($_POST['role']);
     $table = $_POST['role'] . 's';
     $user = \Db\smartSelect(
         "SELECT * FROM `vktask1`.`{$table}` WHERE `email` = :email AND `password` = :password",
