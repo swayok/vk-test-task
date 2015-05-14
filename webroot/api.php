@@ -10,22 +10,11 @@ if (empty($_GET['action'])) {
     exit;
 }
 
-$allowedActions = array(
-    'status' => 'loginStatus',
-    'login' => 'login'
-);
+require_once $srcDir . 'api/api.controller.php';
 
 $action = strtolower($_GET['action']);
 
-if (!isset($allowedActions[$action])) {
-    Utils\setHttpCode(Utils\HTTP_CODE_NOT_FOUND);
-    exit;
-}
-
-require_once $srcDir . 'api.actions.php';
-Utils\setHttpCode(Utils\HTTP_CODE_OK);
-$function = 'Api\\' . $allowedActions[$action];
-$response = $function();
+$response = \Api\Controller\runAction($action);
 
 echo json_encode($response);
 exit;

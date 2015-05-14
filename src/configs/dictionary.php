@@ -16,7 +16,9 @@ $__TRANSLATIONS = array(
     'Select role' => 'Выберите роль',
     'Form contains invalid data' => 'Форма содержит недопустимые данные',
     'Authorisation error: user not found' => 'Ошибка авторизации: пользователь не найден',
-    'Value not found' => 'Значение не найдено'
+    'Value not found' => 'Значение не найдено',
+    'Invalid value' => 'Недопустимое значение',
+    'Failed to save data to DB' => 'Не удалось сохранить данные в базу данных'
 );
 
 function translate($string) {

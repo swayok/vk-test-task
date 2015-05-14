@@ -81,7 +81,7 @@ function query($query, $connectionName = 'default') {
 /**
  * @param string $query
  * @param string $connectionName
- * @return bool
+ * @return bool|array
  * @throws \Exception
  */
 function select($query, $connectionName = 'default') {
@@ -102,7 +102,7 @@ function select($query, $connectionName = 'default') {
  * @param string $query
  * @param array $values
  * @param string $connectionName
- * @return bool
+ * @return bool|array
  */
 function smartSelect($query, $values = array(), $connectionName = 'default') {
     foreach ($values as $key => $value) {
@@ -130,4 +130,28 @@ function getQueryError($connectionName = 'default') {
 function quoteValue($value, $connectionName = 'default') {
     $connection = getConnection($connectionName);
     return "'" . mysqli_real_escape_string($connection, $value) . "'";
+}
+
+/**
+ * @param $data
+ * @param $table
+ * @param string $connectionName
+ * @return bool|array
+ * @throws \Exception
+ */
+function insert($data, $table, $connectionName = 'default') {
+    $values = array();
+    foreach ($data as $key => $value) {
+        $values[$key] = quoteValue($value, $connectionName);
+    }
+    $query = "INSERT INTO `$table` (`" . implode('`,`', array_keys($values)) . '`) VALUES (' . implode(',', $values) . ')';
+    $result = query($query);
+    if ($result->num_rows) {
+        $id = quoteValue(mysqli_insert_id(getConnection($connectionName)));
+        $rows = select("SELECT * from `$table` WHERE `id` = $id");
+        if (!empty($rows[0])) {
+            return $rows[0];
+        }
+    }
+    return false;
 }

@@ -1,32 +1,44 @@
 <?php
 
-namespace Api;
-
-if (session_status() === PHP_SESSION_NONE){
-    session_start();
-}
+namespace Api\CommonActions;
 
 function loginStatus() {
     if (!\Request\isGet()) {
-        \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
     }
-    if (!empty($_SESSION['client'])) {
-        return $_SESSION['client'];
-    } else if (!empty($_SESSION['executor'])) {
-        return $_SESSION['executor'];
-    } else if (!empty($_SESSION['admin'])) {
-        return $_SESSION['admin'];
-    } else {
+    $user = _getAuthorisedUser();
+    if (empty($user)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
         return array(
             'message' => \Dictionary\translate('Authorisation required')
         );
+    } else {
+        return $user;
     }
+}
+
+function _getAuthorisedUser() {
+    if (!empty($_SESSION['client']) && !empty($_SESSION['client']['id'])) {
+        return $_SESSION['client'];
+    } else if (!empty($_SESSION['executor']) && !empty($_SESSION['executor']['id'])) {
+        return $_SESSION['executor'];
+    } else if (!empty($_SESSION['admin']) && !empty($_SESSION['admin']['id'])) {
+        return $_SESSION['admin'];
+    } else {
+        return false;
+    }
+}
+
+function _isAuthorisedAs($role) {
+    if (!in_array($role, array('admin', 'executor', 'client'))) {
+        throw new \Exception("Unknown role [{$role}]");
+    }
+    return !empty($_SESSION[$role]) && !empty($_SESSION[$role]['id']);
 }
 
 function login() {
     if (!\Request\isPost()) {
-        \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
     }
     $errors = \Utils\validateData($_POST, array(
         'role' => array(
@@ -62,8 +74,9 @@ function login() {
     $user = \Db\smartSelect(
         "SELECT * FROM `vktask1`.`{$table}` WHERE `email` = :email AND `password` = :password",
         array(
+            'is_active' => true,
             'email' => strtolower($_POST['email']),
-            'password' => \Utils\hashPassword($_POST['password'])
+            'password' => \Utils\hashPassword($_POST['password']),
         )
     );
     if (!empty($user) && !empty($user[0])) {
@@ -93,4 +106,9 @@ function login() {
             )
         );
     }
+}
+
+function logout() {
+    unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
+    return array('route' => 'login');
 }

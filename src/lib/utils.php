@@ -10,6 +10,7 @@ const HTTP_CODE_FORBIDDEN = 403;
 const HTTP_CODE_NOT_FOUND = 404;
 const HTTP_CODE_NOT_ALLOWED = 405;
 const HTTP_CODE_CONFLICT = 409;
+const HTTP_CODE_INTERNAL_SERVER_ERRORR = 500;
 
 function setHttpCode($httpCode) {
     if (is_numeric($httpCode)) {
@@ -17,6 +18,14 @@ function setHttpCode($httpCode) {
     } else {
         throw new \Exception('Invalid HTTP Code: ' . $httpCode);
     }
+}
+
+function terminate($httpCode, array $response = array()) {
+    setHttpCode($httpCode);
+    if (!empty($response)) {
+        echo json_encode($response);
+    }
+    exit;
 }
 
 function hashPassword($password) {
@@ -97,6 +106,11 @@ function isValidValueType(&$value, $type, $convert = false) {
                 if ($convert) {
                     $value = intval($value);
                 }
+                return true;
+            }
+            return false;
+        case 'id':
+            if (isValidValueType($value, 'int', true) && $value > 0) {
                 return true;
             }
             return false;

@@ -142,5 +142,15 @@ function utilsDataValidation() {
     );
     $results['validator: max_length'] = $success ? 'ok' : \TestTools\getLastTestDetails();
 
+    // test int data type (should be last because 'convert' fill be forced to true and corrupt values in $data)
+    $validator = array('type' => 'id', 'convert' => true);
+    $errors = \Utils\validateData($data, array_fill_keys(array_keys($data), $validator));
+    $validKeys = array('k', 'n', 'o');
+    $success = (
+        \TestTools\assertHasNoKeys($errors, $validKeys)
+        && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
+    );
+    $results['validator: type = id'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+
     return $results;
 }

@@ -14,7 +14,6 @@ require_once __DIR__ . '/../src/tests/api.tests.php';
 
     <h2>Utils</h2>
     <?php
-        /*
         foreach (\Tests\Utils\getTestsList() as $testTitle => $function) {
             echo '<h3>' . $testTitle . '</h3>';
             \TestTools\prepareForTest();
@@ -31,7 +30,7 @@ require_once __DIR__ . '/../src/tests/api.tests.php';
                 echo '</dd>';
             }
             echo '</dl>';
-        }*/
+        }
     ?>
 
     <h2>Api</h2>
