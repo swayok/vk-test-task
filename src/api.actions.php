@@ -2,7 +2,9 @@
 
 namespace Api;
 
-session_start();
+if (session_status() === PHP_SESSION_NONE){
+    session_start();
+}
 
 function loginStatus() {
     if (!\Request\isGet()) {
@@ -55,8 +57,8 @@ function login() {
         return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
     }
 
-    $_POST['role'] = strtolower($_POST['role']);
-    $table = $_POST['role'] . 's';
+    $userRole = strtolower($_POST['role']);
+    $table = $userRole . 's';
     $user = \Db\smartSelect(
         "SELECT * FROM `vktask1`.`{$table}` WHERE `email` = :email AND `password` = :password",
         array(
@@ -67,7 +69,7 @@ function login() {
     if (!empty($user) && !empty($user[0])) {
         $user = $user[0];
         unset($user['password']);
-        switch ($_POST['role']) {
+        switch ($userRole) {
             case 'admin':
                 $user['route'] = 'admin_dashboard';
                 break;
@@ -78,7 +80,8 @@ function login() {
                 $user['route'] = 'tasks_list';
                 break;
         }
-        $_SESSION[$_POST['role']] = $user;
+        $user['role'] = $userRole;
+        $_SESSION[$userRole] = $user;
         return $user;
     } else {
         \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
