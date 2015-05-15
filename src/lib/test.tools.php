@@ -2,6 +2,8 @@
 
 namespace TestTools;
 
+require_once 'db.php';
+
 $__LAST_TEST_DETAILS = array();
 
 function getLastTestDetails() {
@@ -24,6 +26,7 @@ function assertEquals($receivedValue, $expectedValue) {
             'details' => array(
                 'received' => $receivedValue,
                 'expected' => $expectedValue,
+                'db_query' => \Db\getLastQuery()
             )
         );
         return false;
@@ -38,7 +41,8 @@ function assertNotEquals($receivedValue, $expectedValue) {
             'message' => 'Values are equal while they shouldn\'t',
             'details' => array(
                 'received' => $receivedValue,
-                'expected' => $expectedValue
+                'expected' => $expectedValue,
+                'db_query' => \Db\getLastQuery()
             )
         );
         return false;
@@ -55,6 +59,7 @@ function assertHasKeys($receivedArray, $testKeys, $onlyThisKeys = true) {
         $GLOBALS['__LAST_TEST_DETAILS'] = array(
             'success' => false,
             'message' => 'Response is not an array',
+            'db_query' => \Db\getLastQuery()
         );
         return false;
     }
@@ -65,7 +70,8 @@ function assertHasKeys($receivedArray, $testKeys, $onlyThisKeys = true) {
             'message' => 'Some expected keys not found',
             'details' => array(
                 'received_array' => $receivedArray,
-                'expected_keys' => $testKeys
+                'expected_keys' => $testKeys,
+                'db_query' => \Db\getLastQuery()
             )
         );
         return false;
@@ -79,7 +85,8 @@ function assertHasKeys($receivedArray, $testKeys, $onlyThisKeys = true) {
                 'details' => array(
                     'received_array' => $receivedArray,
                     'expected_keys' => $testKeys,
-                    'unexpected_data' => $diff
+                    'unexpected_data' => $diff,
+                    'db_query' => \Db\getLastQuery()
                 )
             );
             return false;
@@ -96,6 +103,7 @@ function assertHasNoKeys($receivedArray, $testKeys) {
         $GLOBALS['__LAST_TEST_DETAILS'] = array(
             'success' => false,
             'message' => 'Response is not an array',
+            'db_query' => \Db\getLastQuery()
         );
         return false;
     }
@@ -107,7 +115,8 @@ function assertHasNoKeys($receivedArray, $testKeys) {
             'message' => 'Some not expected keys were found in response',
             'details' => array(
                 'received_array' => $receivedArray,
-                'not_expected_keys' => $testKeys
+                'not_expected_keys' => $testKeys,
+                'db_query' => \Db\getLastQuery()
             )
         );
         return false;
@@ -137,8 +146,12 @@ function assertValidationErrors($receivedData, $invalidFields = array()) {
 function assertErrorCode($expectedCode = null) {
     $GLOBALS['__LAST_TEST_DETAILS'] = array(
         'success' => (!$expectedCode && http_response_code() >= 400) || http_response_code() === intval($expectedCode),
-        'expected_http_code' => $expectedCode,
-        'http_code' => http_response_code()
+        'message' => 'Unexpected HTTP Code',
+        'details' => array(
+            'expected_http_code' => $expectedCode,
+            'http_code' => http_response_code(),
+            'db_query' => \Db\getLastQuery()
+        )
     );
     return $GLOBALS['__LAST_TEST_DETAILS']['success'];
 }

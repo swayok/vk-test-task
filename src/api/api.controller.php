@@ -24,8 +24,11 @@ function runAction($action) {
                 require_once 'api.admin.actions.php';
                 $allowedActions += array(
                     'add-admin' => '\Api\AdminActions\addAdmin',
+                    'update-admin' => '\Api\AdminActions\updateAdmin',
                     'add-client' => '\Api\AdminActions\addClient',
+                    'update-client' => '\Api\AdminActions\updateClient',
                     'add-executor' => '\Api\AdminActions\addExecutor',
+                    'update-executor' => '\Api\AdminActions\updateExecutor',
                 );
                 break;
             case 'client':
@@ -48,7 +51,7 @@ function runAction($action) {
         }
     }
 
-    if (!isset($allowedActions[$action])) {
+    if (!isset($allowedActions[$action]) || !function_exists($allowedActions[$action])) {
         Utils\setHttpCode(Utils\HTTP_CODE_NOT_FOUND);
         exit;
     }

@@ -3,6 +3,7 @@
 namespace Db;
 
 $__DB_CONNECTIONS = array();
+$__DB_LAST_QUERY = '';
 
 function addDbConnectionConfig($config, $name = 'default') {
     if (array_key_exists($name, $GLOBALS['__DB_CONNECTIONS'])) {
@@ -27,6 +28,10 @@ function addDbConnectionConfig($config, $name = 'default') {
         'connection' => null
     );
     $GLOBALS['__DB_CONNECTIONS'][$name] = array_replace($defaultConfig, $config);
+}
+
+function getLastQuery() {
+    return $GLOBALS['__DB_LAST_QUERY'];
 }
 
 /**
@@ -69,7 +74,7 @@ function getConnection($name = 'default') {
 function query($query, $connectionName = 'default') {
     // Connect to the database
     $connection = getConnection($connectionName);
-
+    $GLOBALS['__DB_LAST_QUERY'] = $query;
     // Query the database
     $result = mysqli_query($connection, $query);
     if ($result === false) {
@@ -133,25 +138,81 @@ function quoteValue($value, $connectionName = 'default') {
 }
 
 /**
- * @param $data
- * @param $table
+ * @param array $data
+ * @param string $table
  * @param string $connectionName
  * @return bool|array
  * @throws \Exception
  */
-function insert($data, $table, $connectionName = 'default') {
+function insert(array $data, $table, $connectionName = 'default') {
+    if (empty($data)) {
+        throw new \Exception('No data passed');
+    } else if (empty($table)) {
+        throw new \Exception('No table passed');
+    }
     $values = array();
     foreach ($data as $key => $value) {
         $values[$key] = quoteValue($value, $connectionName);
     }
+    $table = trim($table, '` ');
     $query = "INSERT INTO `$table` (`" . implode('`,`', array_keys($values)) . '`) VALUES (' . implode(',', $values) . ')';
-    $result = query($query);
-    if ($result->num_rows) {
-        $id = quoteValue(mysqli_insert_id(getConnection($connectionName)));
-        $rows = select("SELECT * from `$table` WHERE `id` = $id");
+    $result = query($query, $connectionName);
+    if (!empty($result)) {
+        $id = quoteValue(mysqli_insert_id(getConnection($connectionName)), $connectionName);
+        $rows = select("SELECT * from `$table` WHERE `id` = $id", $connectionName);
         if (!empty($rows[0])) {
             return $rows[0];
         }
     }
     return false;
+}
+
+/**
+ * @param array $data
+ * @param string $table
+ * @param mixed $id
+ * @param string $connectionName
+ * @return array|bool
+ * @throws \Exception
+ */
+function updateById(array $data, $table, $id, $connectionName = 'default') {
+    if (empty($data)) {
+        throw new \Exception('No data passed');
+    } else if (empty($table)) {
+        throw new \Exception('No table passed');
+    } else if (empty($id)) {
+        throw new \Exception('No record ID passed');
+    }
+    $values = array();
+    foreach ($data as $key => $value) {
+        $values[$key] = quoteValue($value, $connectionName);
+    }
+    $table = trim($table, '` ');
+    $values = array();
+    foreach ($data as $field => $value) {
+        $values[] = "`$field` = " . quoteValue($value, $connectionName);
+    }
+    $values = implode(', ', $values);
+    $id = quoteValue($id, $connectionName);
+    $query = "UPDATE `$table` SET {$values} WHERE `id` = $id";
+    $result = query($query, $connectionName);
+    if (!empty($result)) {
+        $rows = select("SELECT * from `$table` WHERE `id` = $id", $connectionName);
+        if (!empty($rows[0])) {
+            return $rows[0];
+        }
+    }
+    return false;
+}
+
+function idExists($id, $table, $connectionName = 'default') {
+    if (empty($table)) {
+        throw new \Exception('No table passed');
+    } else if (empty($id)) {
+        throw new \Exception('No record ID passed');
+    }
+    $table = trim($table, '` ');
+    $id = quoteValue($id);
+    $result = select("SELECT COUNT(*) as cnt FROM `$table` WHERE `id` = $id", $connectionName);
+    return !empty($result) && !empty($result[0]) && !empty($result[0]['cnt']);
 }

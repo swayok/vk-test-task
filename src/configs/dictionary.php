@@ -18,7 +18,10 @@ $__TRANSLATIONS = array(
     'Authorisation error: user not found' => 'Ошибка авторизации: пользователь не найден',
     'Value not found' => 'Значение не найдено',
     'Invalid value' => 'Недопустимое значение',
-    'Failed to save data to DB' => 'Не удалось сохранить данные в базу данных'
+    'Failed to save data to DB' => 'Не удалось сохранить данные в базу данных',
+    'No data passed' => 'Нет данных',
+    'ID is required' => 'Требуется ID',
+    'Record with passed ID was not found in DB' => 'Запись с требуемым ID не найдена в базе данных',
 );
 
 function translate($string) {

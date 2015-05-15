@@ -45,6 +45,8 @@ function validateData(array &$data, array $validators) {
         'convert' => true,      //< converts value to 'type'
         'min_length' => 0,
         'max_length' => 0,
+        //'default' => ?,      //< sets default value when value is not required and not exists or is empty string
+        'remove_if_empty' => false, //< remove key-value from $data if value is not required and is empty
         'messages' => array(
             'required' => \Dictionary\translate('Value should not be empty'),
             'type' => \Dictionary\translate('Value data type is invalid'),
@@ -58,36 +60,46 @@ function validateData(array &$data, array $validators) {
         $validator = array_replace_recursive($defaults, $validator);
         if ($validator['required'] && (!array_key_exists($key, $data) || isEmptyValue($data[$key]))) {
             $errors[$key] = $validator['messages']['required'];
-        } else if (array_key_exists($key, $data)) {
-            if (
-                !empty($validator['type'])
-                && !isValidValueType($data[$key], $validator['type'], $validator['convert'])
-            ) {
-                $errors[$key] = $validator['messages']['type'];
-            } else if (
-                $validator['min_length'] > 0
-                && (
-                    !is_string($data[$key])
-                    || mb_strlen($data[$key]) < $validator['min_length']
-                )
-            ) {
-                $errors[$key] = $validator['messages']['min_length'];
-            } else if (
-                $validator['max_length'] > 0
-                && (
-                    !is_string($data[$key])
-                    || mb_strlen($data[$key]) > $validator['max_length']
-                )
-            ) {
-                $errors[$key] = $validator['messages']['max_length'];
-            } else if (
-                !empty($validator['regexp'])
-                && (
-                    (!is_string($data[$key]) && !is_numeric($data[$key]))
-                    || !preg_match($validator['regexp'], "{$data[$key]}")
-                )
-            ) {
-                $errors[$key] = $validator['messages']['regexp'];
+        } else {
+            $keyExists = array_key_exists($key, $data);
+            if ((!$keyExists || $data[$key] === '') && array_key_exists('default', $validator)) {
+                $data[$key] = $validator['default'];
+            }
+            if ($keyExists) {
+                if (!empty($validator['remove_if_empty']) && isEmptyValue($data[$key])) {
+                    unset($data[$key]);
+                    break;
+                }
+                if (
+                    !empty($validator['type'])
+                    && !isValidValueType($data[$key], $validator['type'], $validator['convert'])
+                ) {
+                    $errors[$key] = $validator['messages']['type'];
+                } else if (
+                    $validator['min_length'] > 0
+                    && (
+                        !is_string($data[$key])
+                        || mb_strlen($data[$key]) < $validator['min_length']
+                    )
+                ) {
+                    $errors[$key] = $validator['messages']['min_length'];
+                } else if (
+                    $validator['max_length'] > 0
+                    && (
+                        !is_string($data[$key])
+                        || mb_strlen($data[$key]) > $validator['max_length']
+                    )
+                ) {
+                    $errors[$key] = $validator['messages']['max_length'];
+                } else if (
+                    !empty($validator['regexp'])
+                    && (
+                        (!is_string($data[$key]) && !is_numeric($data[$key]))
+                        || !preg_match($validator['regexp'], "{$data[$key]}")
+                    )
+                ) {
+                    $errors[$key] = $validator['messages']['regexp'];
+                }
             }
         }
     }

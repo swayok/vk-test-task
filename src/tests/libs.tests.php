@@ -152,5 +152,7 @@ function utilsDataValidation() {
     );
     $results['validator: type = id'] = $success ? 'ok' : \TestTools\getLastTestDetails();
 
+    // todo: test remove_if_empty and default options
+
     return $results;
 }
