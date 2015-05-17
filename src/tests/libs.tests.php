@@ -20,7 +20,7 @@ function utilsSetHttpCode() {
 }
 
 function utilsDataValidation() {
-    $results = array();
+    \TestTools\cleanTestResults();
 
     // test 'required' validator
     $data = array(
@@ -46,7 +46,7 @@ function utilsDataValidation() {
     $success = (
         \TestTools\assertHasKeys($errors, array('a', 'b', 'g'))
     );
-    $results['validator: required'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: required', $success, $errors);
 
     // test int data type
     $validator = array('type' => 'int', 'convert' => false);
@@ -56,7 +56,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: type = int'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: type = int', $success, $errors);
 
     // test float data type
     $validator = array('type' => 'float', 'convert' => false);
@@ -66,7 +66,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: type = float'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: type = float', $success, $errors);
 
     // test bool data type
     $validator = array('type' => 'bool', 'convert' => false);
@@ -76,7 +76,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: type = bool'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: type = bool', $success, $errors);
 
     // test email data type
     $emails = array(
@@ -110,7 +110,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($emails), $validKeys))
     );
-    $results['validator: type = email'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: type = email', $success, $errors);
 
     // test regexp
     $validator = array('regexp' => '%5$%', 'convert' => false);
@@ -120,7 +120,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: regexp'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: regexp', $success, $errors);
 
     // test min length
     $validator = array('min_length' => '4', 'convert' => false);
@@ -130,7 +130,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: min_length'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: min_length', $success, $errors);
 
     // test min length
     $validator = array('max_length' => '4', 'convert' => false);
@@ -140,7 +140,7 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: max_length'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: max_length', $success, $errors);
 
     // test int data type (should be last because 'convert' fill be forced to true and corrupt values in $data)
     $validator = array('type' => 'id', 'convert' => true);
@@ -150,9 +150,9 @@ function utilsDataValidation() {
         \TestTools\assertHasNoKeys($errors, $validKeys)
         && \TestTools\assertHasKeys($errors, array_diff(array_keys($data), $validKeys))
     );
-    $results['validator: type = id'] = $success ? 'ok' : \TestTools\getLastTestDetails();
+    \TestTools\addTestResult('validator: type = id', $success, $errors);
 
     // todo: test remove_if_empty and default options
 
-    return $results;
+    return \TestTools\getTestResults();
 }

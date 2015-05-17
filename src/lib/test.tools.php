@@ -5,9 +5,29 @@ namespace TestTools;
 require_once 'db.php';
 
 $__LAST_TEST_DETAILS = array();
+$__TEST_RESULTS = array();
 
-function getLastTestDetails() {
-    return $GLOBALS['__LAST_TEST_DETAILS'];
+function getLastTestDetails($response = null) {
+    return $GLOBALS['__LAST_TEST_DETAILS'] + array('response' => $response);
+}
+
+function cleanTestResults() {
+    $GLOBALS['__TEST_RESULTS'] = array();
+}
+
+function addTestResult($title, $success, $response = null) {
+    if (isset($GLOBALS['__TEST_RESULTS'][$title])) {
+        throw new \Exception("Duplicate test called [{$title}]");
+    }
+    $GLOBALS['__TEST_RESULTS'][$title] = $success ? 'ok' : getLastTestDetails($response);
+}
+
+function getTestResults($cleanResults = false) {
+    $ret = $GLOBALS['__TEST_RESULTS'];
+    if ($cleanResults) {
+        cleanTestResults();
+    }
+    return $ret;
 }
 
 function prepareForTest() {

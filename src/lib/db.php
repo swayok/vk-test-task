@@ -109,11 +109,28 @@ function select($query, $connectionName = 'default') {
  * @param string $connectionName
  * @return bool|array
  */
-function smartSelect($query, $values = array(), $connectionName = 'default') {
+function smartSelect($query, array $values = array(), $connectionName = 'default') {
     foreach ($values as $key => $value) {
         $query = str_replace(':' . $key, quoteValue($value, $connectionName), $query);
     }
     return select($query, $connectionName);
+}
+
+/**
+ * Select 1st value from the 1st record.
+ * Use for queries like "Select Count(*) FROM tabe"
+ * @param $query
+ * @param $values
+ * @param string $connectionName
+ * @return mixed|null
+ */
+function selectValue($query, array $values = array(), $connectionName = 'default') {
+    $records = smartSelect($query, $values, $connectionName);
+    if (empty($records)) {
+        return null;
+    } else {
+        return array_shift($records[0]);
+    }
 }
 
 /**
@@ -133,8 +150,14 @@ function getQueryError($connectionName = 'default') {
  * @throws \Exception
  */
 function quoteValue($value, $connectionName = 'default') {
-    $connection = getConnection($connectionName);
-    return "'" . mysqli_real_escape_string($connection, $value) . "'";
+    if (is_bool($value)) {
+        return $value ? '1' : '0';
+    } if (!is_int($value) && !is_float($value)) {
+        $connection = getConnection($connectionName);
+        return "'" . mysqli_real_escape_string($connection, $value) . "'";
+    } else {
+        return "$value";
+    }
 }
 
 /**
@@ -212,7 +235,5 @@ function idExists($id, $table, $connectionName = 'default') {
         throw new \Exception('No record ID passed');
     }
     $table = trim($table, '` ');
-    $id = quoteValue($id);
-    $result = select("SELECT COUNT(*) as cnt FROM `$table` WHERE `id` = $id", $connectionName);
-    return !empty($result) && !empty($result[0]) && !empty($result[0]['cnt']);
+    return selectValue("SELECT COUNT(*) as cnt FROM `$table` WHERE `id` = :id", array('id' => $id), $connectionName);
 }

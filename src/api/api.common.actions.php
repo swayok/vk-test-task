@@ -72,7 +72,7 @@ function login() {
     $userRole = strtolower($_POST['role']);
     $table = $userRole . 's';
     $user = \Db\smartSelect(
-        "SELECT `id`, `email` FROM `vktask1`.`{$table}` WHERE `email` = :email AND `password` = :password",
+        "SELECT `id`, `email` FROM `vktask1`.`{$table}` WHERE `is_active` = :is_active AND `email` = :email AND `password` = :password",
         array(
             'is_active' => true,
             'email' => strtolower($_POST['email']),
