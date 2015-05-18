@@ -9,11 +9,12 @@ var App = {
     loadedRoutes: {},
     apiActions: {
         status: 'status',
-        login: 'login'
+        login: 'login',
+        logout: 'logout'
     },
     currentRoute: null,
     animationsDurationMs: 150,
-    userInfo: {},
+    userInfo: null,
     baseBrowserTitle: ''
 };
 
@@ -29,9 +30,12 @@ App.init = function (urlArgs) {
             controller: AppController.loginForm,
             cache: true
         },
-        admin_dashboard: {
+        logout: {
+            controller: AppController.logout
+        },
+        'admin-dashboard': {
             url: App.viewsUrl + 'admin.dashboard',
-            handlebars: false,
+            handlebars: true,
             controller: AppController.adminDashboard,
             cache: true
         }
@@ -49,11 +53,39 @@ App.init = function (urlArgs) {
             }
         }, false);
 
-        App.isLoggedIn();
+        App.getUser();
     });
 };
 
-App.isLoggedIn = function () {
+App.setUser = function (userInfo) {
+    App.userInfo = userInfo;
+};
+
+App.getUser = function () {
+    if (!$.isPlainObject(App.userInfo)) {
+        return $.ajax({
+            url: App.apiUrl + App.apiActions.status,
+            cache: false,
+            dataType: 'json'
+        }).done(function (json) {
+            if (!!App.urlArgs.route && !!App.routes[App.urlArgs.route] && App.urlArgs.route !== 'login') {
+                App.setRoute(App.urlArgs.route);
+            } else if (!!json.route && !!App.routes[json.route]) {
+                App.setRoute(json.route);
+            } else {
+                App.setRoute('login');
+                return;
+            }
+            App.setUser(json);
+        }).fail(function (xhr) {
+            App.setRoute('login');
+        });
+    } else {
+        return App.userInfo;
+    }
+};
+
+/*App.isLoggedIn = function () {
     return $.ajax({
         url: App.apiUrl + App.apiActions.status,
         cache: false,
@@ -69,7 +101,7 @@ App.isLoggedIn = function () {
     }).fail(function (xhr) {
         App.setRoute('login');
     });
-};
+};*/
 
 App.setRoute = function (route, doNotChangeUrl, message) {
     if (!!message) {
@@ -89,7 +121,9 @@ App.setRoute = function (route, doNotChangeUrl, message) {
     if (App.currentRoute !== route) {
         App.currentRoute = route;
         var routeInfo = App.routes[route];
-        if (!App.loadedRoutes[route]) {
+        if (!routeInfo.url) {
+            routeInfo.controller();
+        } else if (!App.loadedRoutes[route]) {
             App.container.addClass('loading');
             $.ajax({
                 url: routeInfo.url,
@@ -228,8 +262,4 @@ App.applyFormValidationErrors = function (form, xhr) {
             }
         }
     });
-};
-
-App.setUser = function (userInfo) {
-    App.userInfo = userInfo;
 };

@@ -4,6 +4,7 @@ var AppController = {
 
 AppController.loginForm = function (element, isFromCache) {
     App.container.html('').append(element);
+    App.setUser(null);
     if (!isFromCache) {
         var form = App.container.find('form');
         form.on('submit', function (event) {
@@ -25,13 +26,33 @@ AppController.loginForm = function (element, isFromCache) {
             }).always(function () {
                 setTimeout(function () {
                     form.removeClass('loading');
-                }, 500);
+                }, 200);
             });
             return false;
         })
     }
 };
 
+AppController.logout = function () {
+    App.container.addClass('loading');
+    $.ajax({
+        url: App.getApiUrl('logout'),
+        method: 'GET'
+    }).done(function () {
+        App.setRoute('login');
+    }).fail(function (xhr) {
+        if (App.isNotAuthorisationFailure(xhr)) {
+            App.applyFormValidationErrors(form, xhr);
+        }
+    }).always(function () {
+        setTimeout(function () {
+            App.container.removeClass('loading');
+        }, 200);
+    });
+};
+
 AppController.adminDashboard = function (template, isFromCache) {
-    App.container.html('').append(template);
+    // todo: request dasboard data from api
+    var html = template({admin: App.getUser()});
+    App.container.html('').append(html);
 };

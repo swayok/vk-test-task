@@ -84,13 +84,13 @@ function login() {
         unset($user['password']);
         switch ($userRole) {
             case 'admin':
-                $user['route'] = 'admin_dashboard';
+                $user['route'] = 'admin-dashboard';
                 break;
             case 'client':
-                $user['route'] = 'add_task';
+                $user['route'] = 'add-task';
                 break;
             case 'executor':
-                $user['route'] = 'tasks_list';
+                $user['route'] = 'tasks-list';
                 break;
         }
         $user['role'] = $userRole;

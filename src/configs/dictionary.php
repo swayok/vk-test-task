@@ -22,6 +22,14 @@ $__TRANSLATIONS = array(
     'No data passed' => 'Нет данных',
     'ID is required' => 'Требуется ID',
     'Record with passed ID was not found in DB' => 'Запись с требуемым ID не найдена в базе данных',
+    'Order execution system' => 'Система выполнения заказов',
+    'OES' => 'СВЗ',
+    'System management' => 'Управление системой',
+    'Toggle navigation' => 'Показать/скрыть меню',
+    'Dashboard' => 'Состояние системы',
+    'Clients' => 'Клиенты',
+    'Executors' => 'Исполнители',
+    'Admins' => 'Администраторы',
 );
 
 function translate($string) {
