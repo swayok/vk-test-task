@@ -23,10 +23,18 @@ function runAction($action) {
             case 'admin':
                 require_once 'api.admin.actions.php';
                 $allowedActions += array(
+                    'admins-list' => '\Api\AdminActions\adminsList',
+                    'admin' => '\Api\AdminActions\getAdmin',
                     'add-admin' => '\Api\AdminActions\addAdmin',
                     'update-admin' => '\Api\AdminActions\updateAdmin',
+
+                    'clients-list' => '\Api\AdminActions\clientsList',
+                    'client' => '\Api\AdminActions\getClient',
                     'add-client' => '\Api\AdminActions\addClient',
                     'update-client' => '\Api\AdminActions\updateClient',
+
+                    'executors-list' => '\Api\AdminActions\executorsList',
+                    'executor' => '\Api\AdminActions\getExecutor',
                     'add-executor' => '\Api\AdminActions\addExecutor',
                     'update-executor' => '\Api\AdminActions\updateExecutor',
                 );

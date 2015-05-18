@@ -5,6 +5,7 @@ var AppController = {
 AppController.loginForm = function (element, isFromCache) {
     App.container.html('').append(element);
     App.setUser(null);
+    App.isLoading(false);
     if (!isFromCache) {
         var form = App.container.find('form');
         form.on('submit', function (event) {
@@ -34,7 +35,7 @@ AppController.loginForm = function (element, isFromCache) {
 };
 
 AppController.logout = function () {
-    App.container.addClass('loading');
+    App.isLoading(true);
     $.ajax({
         url: App.getApiUrl('logout'),
         method: 'GET'
@@ -45,14 +46,38 @@ AppController.logout = function () {
             App.applyFormValidationErrors(form, xhr);
         }
     }).always(function () {
-        setTimeout(function () {
-            App.container.removeClass('loading');
-        }, 200);
+        App.isLoading(false);
     });
 };
 
 AppController.adminDashboard = function (template, isFromCache) {
     // todo: request dasboard data from api
-    var html = template({admin: App.getUser()});
-    App.container.html('').append(html);
+    App.isLoading(true);
+    $.when(App.getUser()).done(function (admin) {
+        var html = template({admin: admin});
+        App.container.html('').append(html);
+    }).always(function () {
+        App.isLoading(false);
+    });
+};
+
+AppController.adminUsersDataGrid = function (template, role, isFromCache) {
+    App.isLoading(true);
+    var itemsAjax = $.ajax({
+        url: App.getApiUrl(role + 's-list'),
+        method: 'GET',
+        dataType: 'json',
+        cache: false
+    });
+    $.when(itemsAjax, App.getUser()).done(function (itemsResponse, admin) {
+        var html = template({admin: admin, items: itemsResponse[0]});
+        App.container.html('').append(html);
+    }).fail(function (xhr) {
+        if (App.isNotAuthorisationFailure(xhr)) {
+            App.setRoute(App.userInfo && App.userInfo.route ? App.userInfo.route : 'login');
+            App.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
+        }
+    }).always(function () {
+        App.isLoading(false);
+    });
 };

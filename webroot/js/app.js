@@ -10,7 +10,10 @@ var App = {
     apiActions: {
         status: 'status',
         login: 'login',
-        logout: 'logout'
+        logout: 'logout',
+        'clients-list': 'clients',
+        'executors-list': 'executors',
+        'admins-list': 'admins'
     },
     currentRoute: null,
     animationsDurationMs: 150,
@@ -26,18 +29,48 @@ App.init = function (urlArgs) {
     App.routes = {
         login: {
             url: App.viewsUrl + 'login.form',
-            handlebars: false,
+            compileTemplate: false,
             controller: AppController.loginForm,
-            cache: true
+            cache: true,
+            canBeReloaded: false
         },
         logout: {
-            controller: AppController.logout
+            controller: AppController.logout,
+            canBeReloaded: true
         },
         'admin-dashboard': {
             url: App.viewsUrl + 'admin.dashboard',
-            handlebars: true,
+            compileTemplate: true,
             controller: AppController.adminDashboard,
-            cache: true
+            cache: true,
+            canBeReloaded: true
+        },
+        'admin-clients-list': {
+            url: App.viewsUrl + 'clients.list',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.adminUsersDataGrid(template, 'client', isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+        'admin-executors-list': {
+            url: App.viewsUrl + 'executors.list',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.adminUsersDataGrid(template, 'executor', isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+        'admin-admins-list': {
+            url: App.viewsUrl + 'admins.list',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.adminUsersDataGrid(template, 'admin', isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
         }
     };
 
@@ -47,6 +80,11 @@ App.init = function (urlArgs) {
         App.messagesContainer = $('<div id="page-messages">').hide();
         $(document.body).prepend(App.messagesContainer);
 
+        App.container.on('click', 'a[href]', function () {
+            App.setRoute($(this).attr('data-route') || App.extractRouteFromUrl(this.href));
+            return false;
+        });
+
         window.addEventListener('popstate', function(event){
             if (event.state && event.state.route) {
                 App.setRoute(event.state.route);
@@ -55,6 +93,11 @@ App.init = function (urlArgs) {
 
         App.getUser();
     });
+};
+
+App.extractRouteFromUrl = function (url) {
+    var matches = url.match(/^.*?\?.*?route=([a-zA-Z\-_0-9]+)/i);
+    return matches && matches[1] ? matches[1] : '__undefined__route__';
 };
 
 App.setUser = function (userInfo) {
@@ -85,24 +128,6 @@ App.getUser = function () {
     }
 };
 
-/*App.isLoggedIn = function () {
-    return $.ajax({
-        url: App.apiUrl + App.apiActions.status,
-        cache: false,
-        dataType: 'json'
-    }).done(function (json) {
-        if (!!App.urlArgs.route && !!App.routes[App.urlArgs.route] && App.urlArgs.route !== 'login') {
-            App.setRoute(App.urlArgs.route);
-        } else if (!!json.route && !!App.routes[json.route]) {
-            App.setRoute(json.route);
-        } else {
-            App.setRoute('login');
-        }
-    }).fail(function (xhr) {
-        App.setRoute('login');
-    });
-};*/
-
 App.setRoute = function (route, doNotChangeUrl, message) {
     if (!!message) {
         if ($.isPlainObject(message)) {
@@ -116,15 +141,15 @@ App.setRoute = function (route, doNotChangeUrl, message) {
     if (!route || !App.routes[route]) {
         var error = 'Unknown route [' + route + '] detected';
         App.setMessage(error, 'danger');
-        throw error;
+        return false;
     }
-    if (App.currentRoute !== route) {
+    var routeInfo = App.routes[route];
+    if (routeInfo.canBeReloaded || App.currentRoute !== route) {
         App.currentRoute = route;
-        var routeInfo = App.routes[route];
         if (!routeInfo.url) {
             routeInfo.controller();
         } else if (!App.loadedRoutes[route]) {
-            App.container.addClass('loading');
+            App.isLoading(true);
             $.ajax({
                 url: routeInfo.url,
                 cache: true
@@ -138,8 +163,8 @@ App.setRoute = function (route, doNotChangeUrl, message) {
                 document.title = browserTitle;
 
                 var template = '<div class="content-wrapper" id="' + route + '-action-container">' + html + '</div>';
-                if (!!routeInfo.handlebars) {
-                    template = Handlebars.compile(template);
+                if (!!routeInfo.compileTemplate) {
+                    template = doT.template(template);
                 } else {
                     template = $.parseHTML(template);
                 }
@@ -153,21 +178,28 @@ App.setRoute = function (route, doNotChangeUrl, message) {
 
                 routeInfo.controller(template, false);
             }).fail(function (xhr) {
+                App.isLoading(false);
                 if (!App.isAuthorisationFailure(xhr)) {
                     App.setMessage(xhr.responseText, 'danger');
                 }
-            }).always(function () {
-                setTimeout(function () {
-                    App.container.removeClass('loading');
-                }, 500);
             });
         } else {
-            document.title = App.loadedRoutes[routeInfo.url].template.browserTitle;
-            routeInfo.controller(App.loadedRoutes[routeInfo.url].template, true);
+            document.title = App.loadedRoutes[route].browserTitle;
+            routeInfo.controller(App.loadedRoutes[route].template, true);
         }
         if (!doNotChangeUrl) {
             window.history.pushState({route: App.currentRoute}, null, App.baseUrl + '?route=' + route);
         }
+    }
+};
+
+App.isLoading = function (yes) {
+    if (yes || typeof yes === 'undefined') {
+        App.container.addClass('loading');
+    } else {
+        setTimeout(function () {
+            App.container.removeClass('loading');
+        }, 200);
     }
 };
 

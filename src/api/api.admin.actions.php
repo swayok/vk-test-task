@@ -155,3 +155,25 @@ function _updateUser($role) {
     }
 
 }
+
+function clientsList() {
+    return usersList('client', array('id', 'email', 'is_active', 'created_by', 'created_at'));
+}
+
+function adminsList() {
+    return usersList('admin', array('id', 'email', 'is_active', 'created_by', 'created_at'));
+}
+
+function executorsList() {
+    return usersList('executor', array('id', 'email', 'is_active', 'created_by', 'created_at', 'balance'));
+}
+
+function usersList($role, array $fields) {
+    $mainFeilds = '`t`.`' . implode('`,`t`.`', $fields) . '`';
+    $adminCreatorFields = '`j`.`id` as `creator_id`, `j`.`email` as `creator_email`';
+    $join = 'LEFT JOIN `vktask1`.`admins` as `j` ON `t`.`created_by` = `j`.id';
+    $where = '';
+    $options = 'ORDER BY `t`.`created_at` DESC LIMIT 25';
+    $records = \Db\select("SELECT {$mainFeilds}, {$adminCreatorFields} FROM `vktask1`.`{$role}s` as `t` $join $where $options");
+    return $records;
+}

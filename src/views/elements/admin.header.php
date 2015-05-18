@@ -15,18 +15,28 @@ if (!defined('APP_INITIATED')) {
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/?route=admin-dashboard"><?php echo \Dictionary\translate('OES') ?>: <?php echo \Dictionary\translate('System management') ?></a>
+        <a class="navbar-brand" href="/?route=admin-dashboard" ><?php echo \Dictionary\translate('OES') ?>: <?php echo \Dictionary\translate('System management') ?></a>
     </div>
         <div class="collapse navbar-collapse" id="admin-navigation-links">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="/?route=admin-dashboard"><?php echo \Dictionary\translate('Dashboard'); ?></a></li>
-                <li><a href="/?route=clients-list"><?php echo \Dictionary\translate('Clients'); ?></a></li>
-                <li><a href="/?route=executors-list"><?php echo \Dictionary\translate('Executors'); ?></a></li>
-                <li><a href="/?route=admins-list"><?php echo \Dictionary\translate('Admins'); ?></a></li>
+                <li class="<?php echo empty($route) || $route == 'admin-dashboard' ? 'active' : ''; ?>">
+                    <a href="/?route=admin-dashboard"><?php echo \Dictionary\translate('Dashboard'); ?></a>
+                </li>
+                <li class="<?php echo !empty($route) && $route == 'admin-clients-list' ? 'active' : ''; ?>">
+                    <a href="/?route=admin-clients-list"><?php echo \Dictionary\translate('Clients'); ?></a>
+                </li>
+                <li class="<?php echo !empty($route) && $route == 'admin-executors-list' ? 'active' : ''; ?>">
+                    <a href="/?route=admin-executors-list"><?php echo \Dictionary\translate('Executors'); ?></a>
+                </li>
+                <li class="<?php echo !empty($route) && $route == 'admin-admins-list' ? 'active' : ''; ?>">
+                    <a href="/?route=admin-admins-list"><?php echo \Dictionary\translate('Admins'); ?></a>
+                </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="/?route=admin-profile" id="profile-edit">{{ admin.email }}</a></li>
-                <li><a href="/?route=logout" id="profile-edit"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a></li>
+                <li class="<?php echo !empty($route) && $route == 'admin-profile' ? 'active' : ''; ?>">
+                    <a href="/?route=admin-profile" id="profile-edit">{{=it.admin.email}}</a>
+                </li>
+                <li><a href="/?route=logout"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a></li>
             </ul>
         </div>
     </div>
