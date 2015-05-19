@@ -1,19 +1,18 @@
 var App = {
     container: '#page-content',
     messagesContainer: '#page-messages',
-    baseUrl: '/',
-    viewsUrl: '/get_view.php?view=',
-    apiUrl: '/api.php?action=',
+    baseUrl: null,
+    viewsUrl: null,
+    apiUrl: null,
     urlArgs: {},
     routes: {},
     loadedRoutes: {},
-    apiActions: {
-        status: 'status',
-        login: 'login',
-        logout: 'logout',
-        'clients-list': 'clients',
-        'executors-list': 'executors',
-        'admins-list': 'admins'
+    apiActions: {},
+    navigationMenus: {
+        viewsUrls: {},
+        currentSection: null,
+        templates: {},
+        container: '#page-navigation'
     },
     currentRoute: null,
     animationsDurationMs: 150,
@@ -26,62 +25,21 @@ App.init = function (urlArgs) {
         App.urlArgs = urlArgs;
     }
     
-    App.routes = {
-        login: {
-            url: App.viewsUrl + 'login.form',
-            compileTemplate: false,
-            controller: AppController.loginForm,
-            cache: true,
-            canBeReloaded: false
-        },
-        logout: {
-            controller: AppController.logout,
-            canBeReloaded: true
-        },
-        'admin-dashboard': {
-            url: App.viewsUrl + 'admin.dashboard',
-            compileTemplate: true,
-            controller: AppController.adminDashboard,
-            cache: true,
-            canBeReloaded: true
-        },
-        'admin-clients-list': {
-            url: App.viewsUrl + 'clients.list',
-            compileTemplate: true,
-            controller: function (template, isFromCache) {
-                AppController.adminUsersDataGrid(template, 'client', isFromCache);
-            },
-            cache: true,
-            canBeReloaded: true
-        },
-        'admin-executors-list': {
-            url: App.viewsUrl + 'executors.list',
-            compileTemplate: true,
-            controller: function (template, isFromCache) {
-                AppController.adminUsersDataGrid(template, 'executor', isFromCache);
-            },
-            cache: true,
-            canBeReloaded: true
-        },
-        'admin-admins-list': {
-            url: App.viewsUrl + 'admins.list',
-            compileTemplate: true,
-            controller: function (template, isFromCache) {
-                AppController.adminUsersDataGrid(template, 'admin', isFromCache);
-            },
-            cache: true,
-            canBeReloaded: true
-        }
-    };
+    AppConfigs.configureApp();
 
     $(document).ready(function () {
         App.baseBrowserTitle = document.title;
         App.container = $(App.container);
-        App.messagesContainer = $('<div id="page-messages">').hide();
+        App.navigationMenus.container = $('<div id="page-navigation"></div>');
+        App.container.before(App.navigationMenus.container);
+        App.messagesContainer = $('<div id="page-messages"></div>').hide();
         $(document.body).prepend(App.messagesContainer);
 
-        App.container.on('click', 'a[href]', function () {
-            App.setRoute($(this).attr('data-route') || App.extractRouteFromUrl(this.href));
+        $(document.body).on('click', 'a[href]', function () {
+            if (!$(this).attr('data-route')) {
+                $(this).attr('data-route', App.extractRouteFromUrl(this.href));
+            }
+            App.setRoute($(this).attr('data-route'));
             return false;
         });
 
@@ -102,6 +60,9 @@ App.extractRouteFromUrl = function (url) {
 
 App.setUser = function (userInfo) {
     App.userInfo = userInfo;
+    if (App.currentRoute && App.routes[App.currentRoute].section) {
+        App.displayNavigationMenu(App.routes[App.currentRoute].section, true);
+    }
 };
 
 App.getUser = function () {
@@ -128,6 +89,15 @@ App.getUser = function () {
     }
 };
 
+App.setCurrentRoute = function (route) {
+    if (App.currentRoute !== route) {
+        App.currentRoute = route;
+        App.container.find('a.active').removeClass('active').end()
+            .find('a[href*="?route=' + route + '"]').addClass('active');
+        App.activateNavigationMenuButton(route);
+    }
+};
+
 App.setRoute = function (route, doNotChangeUrl, message) {
     if (!!message) {
         if ($.isPlainObject(message)) {
@@ -145,7 +115,7 @@ App.setRoute = function (route, doNotChangeUrl, message) {
     }
     var routeInfo = App.routes[route];
     if (routeInfo.canBeReloaded || App.currentRoute !== route) {
-        App.currentRoute = route;
+        App.setCurrentRoute(route);
         if (!routeInfo.url) {
             routeInfo.controller();
         } else if (!App.loadedRoutes[route]) {
@@ -294,4 +264,46 @@ App.applyFormValidationErrors = function (form, xhr) {
             }
         }
     });
+};
+
+App.displayNavigationMenu = function (section, rerender) {
+    if (App.navigationMenus.viewsUrls[section]) {
+        if (App.navigationMenus.templates[section]) {
+            if (App.navigationMenus.templates[section] === true) {
+                // already loading a template
+            } else if (section !== App.navigationMenus.currentSection || rerender) {
+                var html = App.navigationMenus.templates[section]({user: App.getUser()});
+                App.navigationMenus.container.html('').append(html);
+                App.activateNavigationMenuButton(App.currentRoute);
+                App.navigationMenus.currentSection = section;
+            }
+            return true;
+        } else {
+            App.navigationMenus.templates[section] = true;
+            $.ajax({
+                url: App.navigationMenus.viewsUrls[section],
+                cache: true
+            }).done(function (html) {
+                App.navigationMenus.templates[section] = doT.template(html);
+                var navHtml = App.navigationMenus.templates[section]({user: App.getUser()});
+                App.navigationMenus.container.html('').append(navHtml);
+                App.activateNavigationMenuButton(App.currentRoute);
+                App.navigationMenus.currentSection = section;
+            }).fail(function (xhr) {
+                if (!App.isAuthorisationFailure(xhr)) {
+                    App.setMessage(xhr.responseText, 'danger');
+                }
+            });
+            return true;
+        }
+    } else {
+        App.navigationMenus.currentSection = null;
+        App.navigationMenus.container.html('');
+    }
+    return false;
+};
+
+App.activateNavigationMenuButton = function (route) {
+    App.navigationMenus.container.find('li.active').removeClass('active').end()
+        .find('li a[href*="?route=' + route + '"]').closest('li').addClass('active');
 };

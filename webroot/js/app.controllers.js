@@ -6,32 +6,31 @@ AppController.loginForm = function (element, isFromCache) {
     App.container.html('').append(element);
     App.setUser(null);
     App.isLoading(false);
-    if (!isFromCache) {
-        var form = App.container.find('form');
-        form.on('submit', function (event) {
-            App.removeFormValidationErrors(form, true);
-            form.addClass('loading');
-            var data = App.collectFormData(form);
-            $.ajax({
-                url: App.getApiUrl('login'),
-                method: 'POST',
-                data: data,
-                dataType: 'json'
-            }).done(function (json) {
-                App.setUser(json);
-                App.setRoute(json.route);
-            }).fail(function (xhr) {
-                if (App.isNotAuthorisationFailure(xhr)) {
-                    App.applyFormValidationErrors(form, xhr);
-                }
-            }).always(function () {
-                setTimeout(function () {
-                    form.removeClass('loading');
-                }, 200);
-            });
-            return false;
-        })
-    }
+    var form = App.container.find('form');
+    form[0].reset();
+    form.on('submit', function (event) {
+        App.removeFormValidationErrors(form, true);
+        form.addClass('loading');
+        var data = App.collectFormData(form);
+        $.ajax({
+            url: App.getApiUrl('login'),
+            method: 'POST',
+            data: data,
+            dataType: 'json'
+        }).done(function (json) {
+            App.setUser(json);
+            App.setRoute(json.route);
+        }).fail(function (xhr) {
+            if (App.isNotAuthorisationFailure(xhr)) {
+                App.applyFormValidationErrors(form, xhr);
+            }
+        }).always(function () {
+            setTimeout(function () {
+                form.removeClass('loading');
+            }, 200);
+        });
+        return false;
+    });
 };
 
 AppController.logout = function () {
@@ -51,6 +50,7 @@ AppController.logout = function () {
 };
 
 AppController.adminDashboard = function (template, isFromCache) {
+    App.displayNavigationMenu('admin');
     // todo: request dasboard data from api
     App.isLoading(true);
     $.when(App.getUser()).done(function (admin) {
@@ -62,6 +62,7 @@ AppController.adminDashboard = function (template, isFromCache) {
 };
 
 AppController.adminUsersDataGrid = function (template, role, isFromCache) {
+    App.displayNavigationMenu('admin');
     App.isLoading(true);
     var itemsAjax = $.ajax({
         url: App.getApiUrl(role + 's-list'),
