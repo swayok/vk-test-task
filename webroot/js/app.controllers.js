@@ -50,7 +50,7 @@ AppController.logout = function () {
 };
 
 AppController.adminDashboard = function (template, isFromCache) {
-    App.displayNavigationMenu('admin');
+    AppComponents.displayNavigationMenu('admin');
     // todo: request dasboard data from api
     App.isLoading(true);
     $.when(App.getUser()).done(function (admin) {
@@ -62,7 +62,7 @@ AppController.adminDashboard = function (template, isFromCache) {
 };
 
 AppController.adminUsersDataGrid = function (template, role, isFromCache) {
-    App.displayNavigationMenu('admin');
+    AppComponents.displayNavigationMenu('admin');
     App.isLoading(true);
     var itemsAjax = $.ajax({
         url: App.getApiUrl(role + 's-list'),
@@ -76,7 +76,7 @@ AppController.adminUsersDataGrid = function (template, role, isFromCache) {
     }).fail(function (xhr) {
         if (App.isNotAuthorisationFailure(xhr)) {
             App.setRoute(App.userInfo && App.userInfo.route ? App.userInfo.route : 'login');
-            App.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
+            AppComponents.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
         }
     }).always(function () {
         App.isLoading(false);

@@ -1,19 +1,12 @@
 var App = {
     container: '#page-content',
-    messagesContainer: '#page-messages',
-    baseUrl: null,
+    baseUrl: '/',
     viewsUrl: null,
     apiUrl: null,
     urlArgs: {},
     routes: {},
     loadedRoutes: {},
     apiActions: {},
-    navigationMenus: {
-        viewsUrls: {},
-        currentSection: null,
-        templates: {},
-        container: '#page-navigation'
-    },
     currentRoute: null,
     animationsDurationMs: 150,
     userInfo: null,
@@ -30,10 +23,7 @@ App.init = function (urlArgs) {
     $(document).ready(function () {
         App.baseBrowserTitle = document.title;
         App.container = $(App.container);
-        App.navigationMenus.container = $('<div id="page-navigation"></div>');
-        App.container.before(App.navigationMenus.container);
-        App.messagesContainer = $('<div id="page-messages"></div>').hide();
-        $(document.body).prepend(App.messagesContainer);
+        AppComponents.init();
 
         $(document.body).on('click', 'a[href]', function () {
             if (!$(this).attr('data-route')) {
@@ -61,7 +51,7 @@ App.extractRouteFromUrl = function (url) {
 App.setUser = function (userInfo) {
     App.userInfo = userInfo;
     if (App.currentRoute && App.routes[App.currentRoute].section) {
-        App.displayNavigationMenu(App.routes[App.currentRoute].section, true);
+        AppComponents.displayNavigationMenu(App.routes[App.currentRoute].section, true);
     }
 };
 
@@ -94,23 +84,23 @@ App.setCurrentRoute = function (route) {
         App.currentRoute = route;
         App.container.find('a.active').removeClass('active').end()
             .find('a[href*="?route=' + route + '"]').addClass('active');
-        App.activateNavigationMenuButton(route);
+        AppComponents.activateNavigationMenuButton(route);
     }
 };
 
 App.setRoute = function (route, doNotChangeUrl, message) {
     if (!!message) {
         if ($.isPlainObject(message)) {
-            App.setMessage(message.message, message.type);
+            AppComponents.setMessage(message.message, message.type);
         } else {
-            App.setMessage(message);
+            AppComponents.setMessage(message);
         }
     } else {
-        App.hideMessage();
+        AppComponents.hideMessage();
     }
     if (!route || !App.routes[route]) {
         var error = 'Unknown route [' + route + '] detected';
-        App.setMessage(error, 'danger');
+        AppComponents.setMessage(error, 'danger');
         return false;
     }
     var routeInfo = App.routes[route];
@@ -150,7 +140,7 @@ App.setRoute = function (route, doNotChangeUrl, message) {
             }).fail(function (xhr) {
                 App.isLoading(false);
                 if (!App.isAuthorisationFailure(xhr)) {
-                    App.setMessage(xhr.responseText, 'danger');
+                    AppComponents.setMessage(xhr.responseText, 'danger');
                 }
             });
         } else {
@@ -173,47 +163,10 @@ App.isLoading = function (yes) {
     }
 };
 
-App.setMessage = function (message, type) {
-    $.when(App.hideMessage()).done(function () {
-        message = $('<div class="container">').append(message);
-        App.messagesContainer.html('').append(message);
-        if (!type) {
-            type = 'info';
-        } else {
-            type = type.toLowerCase();
-            if (!$.inArray(type, ['success', 'info', 'warning', 'danger'])) {
-                type = 'info';
-            }
-        }
-        App.messagesContainer.attr('class', 'bg-' + type);
-        App.messagesContainer.slideDown(App.animationsDurationMs);
-    });
-};
-
-App.hideMessage = function () {
-    return App.messagesContainer.slideUp(App.animationsDurationMs);
-};
-
-App.collectFormData = function (form) {
-    var dataObject = {};
-    var dataArray = form.serializeArray();
-    $.each(dataArray, function() {
-        if (dataObject[this.name] !== undefined) {
-            if (!dataObject[this.name].push) {
-                dataObject[this.name] = [dataObject[this.name]];
-            }
-            dataObject[this.name].push(this.value || '');
-        } else {
-            dataObject[this.name] = this.value || '';
-        }
-    });
-    return dataObject;
-};
-
 App.getApiUrl = function (action) {
     if (!App.apiActions[action]) {
         var error = 'Api action [' + action + '] not defined';
-        App.setMessage(error, 'danger');
+        AppComponents.setMessage(error, 'danger');
         throw error;
     }
     return App.apiUrl + action;
@@ -236,9 +189,25 @@ App.isNotAuthorisationFailure = function (xhr) {
     return true;
 };
 
+App.collectFormData = function (form) {
+    var dataObject = {};
+    var dataArray = form.serializeArray();
+    $.each(dataArray, function() {
+        if (dataObject[this.name] !== undefined) {
+            if (!dataObject[this.name].push) {
+                dataObject[this.name] = [dataObject[this.name]];
+            }
+            dataObject[this.name].push(this.value || '');
+        } else {
+            dataObject[this.name] = this.value || '';
+        }
+    });
+    return dataObject;
+};
+
 App.removeFormValidationErrors = function (form, hideMessage) {
     if (!!hideMessage) {
-        App.hideMessage();
+        AppComponents.hideMessage();
     }
     form.find('.has-error').removeClass('has-error');
     return form.find('.error-text').slideUp(App.animationsDurationMs);
@@ -248,10 +217,10 @@ App.applyFormValidationErrors = function (form, xhr) {
     $.when(App.removeFormValidationErrors(form, true)).done(function () {
         var response = JSON.parse(xhr.responseText);
         if (!response) {
-            App.setMessage(xhr.responseText);
+            AppComponents.setMessage(xhr.responseText);
         } else {
             if (response.message) {
-                App.setMessage(response.message, 'danger');
+                AppComponents.setMessage(response.message, 'danger');
             }
             if (response.errors && $.isPlainObject(response.errors)) {
                 for (var inputName in response.errors) {
@@ -266,44 +235,3 @@ App.applyFormValidationErrors = function (form, xhr) {
     });
 };
 
-App.displayNavigationMenu = function (section, rerender) {
-    if (App.navigationMenus.viewsUrls[section]) {
-        if (App.navigationMenus.templates[section]) {
-            if (App.navigationMenus.templates[section] === true) {
-                // already loading a template
-            } else if (section !== App.navigationMenus.currentSection || rerender) {
-                var html = App.navigationMenus.templates[section]({user: App.getUser()});
-                App.navigationMenus.container.html('').append(html);
-                App.activateNavigationMenuButton(App.currentRoute);
-                App.navigationMenus.currentSection = section;
-            }
-            return true;
-        } else {
-            App.navigationMenus.templates[section] = true;
-            $.ajax({
-                url: App.navigationMenus.viewsUrls[section],
-                cache: true
-            }).done(function (html) {
-                App.navigationMenus.templates[section] = doT.template(html);
-                var navHtml = App.navigationMenus.templates[section]({user: App.getUser()});
-                App.navigationMenus.container.html('').append(navHtml);
-                App.activateNavigationMenuButton(App.currentRoute);
-                App.navigationMenus.currentSection = section;
-            }).fail(function (xhr) {
-                if (!App.isAuthorisationFailure(xhr)) {
-                    App.setMessage(xhr.responseText, 'danger');
-                }
-            });
-            return true;
-        }
-    } else {
-        App.navigationMenus.currentSection = null;
-        App.navigationMenus.container.html('');
-    }
-    return false;
-};
-
-App.activateNavigationMenuButton = function (route) {
-    App.navigationMenus.container.find('li.active').removeClass('active').end()
-        .find('li a[href*="?route=' + route + '"]').closest('li').addClass('active');
-};

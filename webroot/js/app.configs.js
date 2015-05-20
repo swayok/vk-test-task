@@ -2,11 +2,10 @@ var AppConfigs = {};
 
 AppConfigs.configureApp = function () {
 
-    App.baseUrl = '/';
     App.viewsUrl = '/get_view.php?view=';
     App.apiUrl = '/api.php?action=';
 
-    App.navigationMenus.viewsUrls = {
+    AppComponents.navigationMenus.viewsUrls = {
         admin: App.viewsUrl +'admin.header',
         client: App.viewsUrl +'client.header',
         executor: App.viewsUrl +'executor.header'
