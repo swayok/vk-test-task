@@ -25,22 +25,46 @@ App.init = function (urlArgs) {
         App.container = $(App.container);
         AppComponents.init();
 
-        $(document.body).on('click', 'a[href]', function () {
+        $(document.body).on('click', 'a[href^="/"]', function () {
             if (!$(this).attr('data-route')) {
                 $(this).attr('data-route', App.extractRouteFromUrl(this.href));
             }
+            App.urlArgs = {};
             App.setRoute($(this).attr('data-route'));
             return false;
         });
 
         window.addEventListener('popstate', function(event){
-            if (event.state && event.state.route) {
-                App.setRoute(event.state.route);
+            if (event.state) {
+                if (event.state.urlArgs) {
+                    App.urlArgs = event.state.urlArgs;
+                } else {
+                    App.urlArgs = {};
+                }
+                if (event.state.route) {
+                    App.setRoute(event.state.route);
+                }
             }
         }, false);
 
         App.getUser();
     });
+};
+
+App.getRouteUrl = function (route, urlArgs) {
+    if (!route) {
+        route = App.currentRoute;
+        if (!urlArgs) {
+            urlArgs = App.urlArgs;
+        }
+    }
+    delete urlArgs.route;
+    if (!App.routes[route]) {
+        var error = 'Unknown route [' + route + '] detected';
+        AppComponents.setMessage(error, 'danger');
+        return false;
+    }
+    return App.baseUrl + '?route=' + route + ($.isEmptyObject(urlArgs) ? '' : '&' + $.param(urlArgs));
 };
 
 App.extractRouteFromUrl = function (url) {
@@ -148,7 +172,14 @@ App.setRoute = function (route, doNotChangeUrl, message) {
             routeInfo.controller(App.loadedRoutes[route].template, true);
         }
         if (!doNotChangeUrl) {
-            window.history.pushState({route: App.currentRoute}, null, App.baseUrl + '?route=' + route);
+            if (App.urlArgs.route) {
+                delete App.urlArgs.route;
+            }
+            window.history.pushState(
+                {route: App.currentRoute, urlArgs: App.urlArgs},
+                null,
+                App.getRouteUrl()
+            );
         }
     }
 };
@@ -173,17 +204,21 @@ App.getApiUrl = function (action) {
 };
 
 App.isValidationErrors = function (xhr) {
-    return xhr.statusCode === 400;
+    return xhr.status === 400;
 };
 
 App.isAuthorisationFailure = function (xhr) {
-    return xhr.statusCode === 401;
+    return xhr.status === 401;
 };
 
 App.isNotAuthorisationFailure = function (xhr) {
     if (App.isAuthorisationFailure(xhr)) {
-        var json = JSON.parse(xhr.responseText);
-        App.setRoute('login', false, json.message ? {type: 'error', message: json.message} : null);
+        try {
+            var json = JSON.parse(xhr.responseText);
+            App.setRoute('login', false, json.message ? {type: 'danger', message: json.message} : null);
+        } catch (exc) {
+            App.setRoute('login');
+        }
         return false;
     }
     return true;

@@ -10,7 +10,7 @@ require_once __DIR__ . '/../api/api.admin.actions.php';
 function getTestsList() {
     return array(
 //        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
-        'Creating users and Login' => __NAMESPACE__ . '\createUsersAndlogin'
+        'Creating users and Login' => __NAMESPACE__ . '\createUsersAndLogin'
     );
 }
 
@@ -179,21 +179,23 @@ function loginStatus() {
     return \TestTools\getTestResults(true);
 }
 
-function createUsersAndlogin() {
+function createUsersAndLogin() {
     \TestTools\cleanTestResults();
     unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
+    $GLOBALS['__REQUEST_INFO']['isPost'] = true;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = false;
 
-    $response = \Api\AdminActions\addAdmin();
+    /*$response = \Api\AdminActions\addAdmin();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_UNAUTHORIZED)
         && \TestTools\assertHasKeys($response, array('route'))
     );
-    \TestTools\addTestResult('admin not logged in', $success, $response);
+    \TestTools\addTestResult('admin not logged in', $success, $response);*/
 
     // get admin account to be able create test users
     $admin = \Db\select('SELECT * FROM `vktask1`.`admins` LIMIT 1');
     if (empty($admin)) {
-        \TestTools\addTestResult('select admin user', $success, 'No admins in DB');
+        \TestTools\addTestResult('select admin user', false, 'No admins in DB');
         return \TestTools\getTestResults(true);
     }
     $admin = $admin[0];
@@ -203,9 +205,6 @@ function createUsersAndlogin() {
         'email' => 'testuser' . time() . '@test.com',
         'password' => 'l9DFhc1cXHSot4OkxZj1',
     );
-
-    $GLOBALS['__REQUEST_INFO']['isPost'] = true;
-    $GLOBALS['__REQUEST_INFO']['isGet'] = false;
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST = array();
@@ -291,6 +290,9 @@ function createUsersAndlogin() {
         && \TestTools\assertEquals($response['is_active'], '1')
     );
     \TestTools\addTestResult('client creation', $success, $response);
+    if (!$success) {
+        return \TestTools\getTestResults(true);
+    }
     $clientId = $response['id'];
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
@@ -313,6 +315,7 @@ function createUsersAndlogin() {
         && \TestTools\assertEquals($response['id'], $clientId)
     );
     \TestTools\addTestResult('client login', $success, $response);
+    $_SESSION['admin'] = $admin;
 
     $_POST = array();
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
@@ -390,8 +393,9 @@ function createUsersAndlogin() {
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('deactivated client login', $success, $response);
+    $_SESSION['admin'] = $admin;
 
-    \Db\query('DELETE FROM `vktask1`.`clients` WHERE `email` LIKE "testuser%@test.com"');
+    //\Db\query('DELETE FROM `vktask1`.`clients` WHERE `email` LIKE "testuser%@test.com"');
 
     // executor creation, login, deactivation
 
@@ -404,6 +408,9 @@ function createUsersAndlogin() {
         && \TestTools\assertEquals($response['is_active'], '1')
     );
     \TestTools\addTestResult('executor creation', $success, $response);
+    if (!$success) {
+        return \TestTools\getTestResults(true);
+    }
     $executorId = $response['id'];
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
@@ -426,6 +433,7 @@ function createUsersAndlogin() {
         && \TestTools\assertEquals($response['id'], $executorId)
     );
     \TestTools\addTestResult('executor login', $success, $response);
+    $_SESSION['admin'] = $admin;
 
     $_POST = array(
         'id' => $executorId,
@@ -451,8 +459,9 @@ function createUsersAndlogin() {
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('deactivated executor login', $success, $response);
+    $_SESSION['admin'] = $admin;
 
-    \Db\query('DELETE FROM `vktask1`.`executors` WHERE `email` LIKE "testuser%@test.com"');
+    //\Db\query('DELETE FROM `vktask1`.`executors` WHERE `email` LIKE "testuser%@test.com"');
 
     // admin creation, login, deactivation
 
@@ -465,6 +474,9 @@ function createUsersAndlogin() {
         && \TestTools\assertEquals($response['is_active'], '1')
     );
     \TestTools\addTestResult('admin creation', $success, $response);
+    if (!$success) {
+        return \TestTools\getTestResults(true);
+    }
     $adminId = $response['id'];
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
@@ -486,6 +498,7 @@ function createUsersAndlogin() {
         && \TestTools\assertEquals($response['email'], $validUser['email'])
     );
     \TestTools\addTestResult('admin login', $success, $response);
+    $_SESSION['admin'] = $admin;
 
     $_POST = array(
         'id' => $adminId,
@@ -511,8 +524,9 @@ function createUsersAndlogin() {
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('deactivated admin login', $success, $response);
+    $_SESSION['admin'] = $admin;
 
-    \Db\query('DELETE FROM `vktask1`.`admins` WHERE `email` LIKE "testuser%@test.com"');
+    //\Db\query('DELETE FROM `vktask1`.`admins` WHERE `email` LIKE "testuser%@test.com"');
 
     return \TestTools\getTestResults(true);
 }

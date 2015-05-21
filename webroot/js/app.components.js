@@ -6,7 +6,10 @@ var AppComponents = {
         templates: {},
         container: '#page-navigation'
     },
-    paginationTpl: null
+    pagination: {
+        viewUrl: null,
+        template: null
+    }
 };
 
 AppComponents.init = function () {
@@ -45,7 +48,7 @@ AppComponents.displayNavigationMenu = function (section, rerender) {
                 // already loading a template
             } else if (section !== AppComponents.navigationMenus.currentSection || rerender) {
                 var html = AppComponents.navigationMenus.templates[section]({user: App.getUser()});
-                AppComponents.navigationMenus.container.html('').append(html);
+                AppComponents.navigationMenus.container.html(html);
                 AppComponents.activateNavigationMenuButton(App.currentRoute);
                 AppComponents.navigationMenus.currentSection = section;
             }
@@ -58,11 +61,11 @@ AppComponents.displayNavigationMenu = function (section, rerender) {
             }).done(function (html) {
                 AppComponents.navigationMenus.templates[section] = doT.template(html);
                 var navHtml = AppComponents.navigationMenus.templates[section]({user: App.getUser()});
-                AppComponents.navigationMenus.container.html('').append(navHtml);
+                AppComponents.navigationMenus.container.html(navHtml);
                 AppComponents.activateNavigationMenuButton(App.currentRoute);
                 AppComponents.navigationMenus.currentSection = section;
             }).fail(function (xhr) {
-                if (!App.isAuthorisationFailure(xhr)) {
+                if (App.isNotAuthorisationFailure(xhr)) {
                     AppComponents.setMessage(xhr.responseText, 'danger');
                 }
             });
@@ -80,6 +83,24 @@ AppComponents.activateNavigationMenuButton = function (route) {
         .find('li a[href*="?route=' + route + '"]').closest('li').addClass('active');
 };
 
-AppComponents.getPaginatorTemplate = function () {
-
+AppComponents.getPaginationTemplate = function (data) {
+    if (!AppComponents.pagination.template) {
+        var deferred = $.Deferred();
+        $.ajax({
+            url: AppComponents.pagination.viewUrl,
+            cache: true
+        }).done(function (html) {
+            AppComponents.pagination.template = doT.template(html);
+            if (data) {
+                deferred.resolve(AppComponents.pagination.template(data));
+            } else {
+                deferred.resolve(AppComponents.pagination.template);
+            }
+        }).fail(function (xhr) {
+            deferred.reject(xhr);
+        });
+        return deferred;
+    } else {
+        return data ? AppComponents.pagination.template(data) : AppComponents.pagination.template;
+    }
 };

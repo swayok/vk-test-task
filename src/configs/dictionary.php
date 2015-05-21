@@ -3,6 +3,7 @@
 namespace Dictionary;
 
 $__TRANSLATIONS = array(
+    'Access denied' => 'Доступ запрещен',
     'Authorisation' => 'Авторизация',
     'Password' => 'Пароль',
     'Role' => 'Роль',
@@ -30,6 +31,10 @@ $__TRANSLATIONS = array(
     'Clients' => 'Клиенты',
     'Executors' => 'Исполнители',
     'Admins' => 'Администраторы',
+    'Rows' => 'Строки',
+    'From' => 'из',
+    'Newer' => 'Новее',
+    'Older' => 'Старее',
 );
 
 function translate($string) {

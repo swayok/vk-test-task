@@ -16,8 +16,7 @@ function addExecutor() {
 
 function _addUser($role) {
     if (!\Api\CommonActions\_isAuthorisedAs('admin')) {
-        \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
-        return array('route' => 'login');
+        \Api\Controller\terminateUnauthorisedRequest();
     }
     if (!\Request\isPost()) {
         \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
@@ -88,8 +87,7 @@ function updateExecutor() {
 
 function _updateUser($role) {
     if (!\Api\CommonActions\_isAuthorisedAs('admin')) {
-        \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
-        return array('route' => 'login');
+        \Api\Controller\terminateUnauthorisedRequest();
     }
     if (!\Request\isPost()) {
         \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
@@ -114,11 +112,11 @@ function _updateUser($role) {
             )
         )
     ));
-    $allowedFields = array('password', 'is_active');
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
         return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
     }
+    $allowedFields = array('password', 'is_active');
     $dataToUpdate = array_intersect_key($_POST, array_flip($allowedFields));
     if (empty($dataToUpdate['password'])) {
         unset($dataToUpdate['password']); ///< avoid saving empty password
@@ -169,11 +167,56 @@ function executorsList() {
 }
 
 function usersList($role, array $fields) {
+    if (!\Api\CommonActions\_isAuthorisedAs('admin')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isGet()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $errors = \Utils\validateData($_GET, array(
+        'page' => array(
+            'required' => false,
+            'type' => 'id',
+            'convert' => true,
+            'messages' => array(
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+    ));
+
+    $offset = (empty($errors) || empty($errors['page'])) ? ($_GET['page'] - 1) * DATA_GRID_ITEMS_PER_PAGE : 0;
     $mainFeilds = '`t`.`' . implode('`,`t`.`', $fields) . '`';
     $adminCreatorFields = '`j`.`id` as `creator_id`, `j`.`email` as `creator_email`';
     $join = 'LEFT JOIN `vktask1`.`admins` as `j` ON `t`.`created_by` = `j`.id';
     $where = '';
-    $options = 'ORDER BY `t`.`created_at` DESC LIMIT 25';
+    $options = 'ORDER BY `t`.`created_at` DESC LIMIT ' . DATA_GRID_ITEMS_PER_PAGE . ' OFFSET ' . $offset;
     $records = \Db\select("SELECT {$mainFeilds}, {$adminCreatorFields} FROM `vktask1`.`{$role}s` as `t` $join $where $options");
     return $records;
+}
+
+function clientsListInfo() {
+    return usersListInfo('client');
+}
+
+function adminsListInfo() {
+    return usersListInfo('admin');
+}
+
+function executorsListInfo() {
+    return usersListInfo('executor');
+}
+
+function usersListInfo($role) {
+    if (!\Api\CommonActions\_isAuthorisedAs('admin')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isGet()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $recordsCount = \Db\selectValue("SELECT COUNT(*) FROM `vktask1`.`{$role}s`");
+    return array(
+        'total' => $recordsCount,
+        'pages' => ceil($recordsCount / DATA_GRID_ITEMS_PER_PAGE),
+        'items_per_page' => DATA_GRID_ITEMS_PER_PAGE
+    );
 }

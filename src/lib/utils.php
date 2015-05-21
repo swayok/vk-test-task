@@ -23,7 +23,7 @@ function setHttpCode($httpCode) {
 function terminate($httpCode, array $response = array()) {
     setHttpCode($httpCode);
     if (!empty($response)) {
-        echo json_encode($response);
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
     }
     exit;
 }

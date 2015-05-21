@@ -69,6 +69,7 @@ function login() {
         return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
     }
 
+    unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
     $userRole = strtolower($_POST['role']);
     $table = $userRole . 's';
     $user = \Db\smartSelect(

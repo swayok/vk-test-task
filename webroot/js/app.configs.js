@@ -11,13 +11,18 @@ AppConfigs.configureApp = function () {
         executor: App.viewsUrl +'executor.header'
     };
 
+    AppComponents.pagination.viewUrl = App.viewsUrl +'pagination';
+
     App.apiActions = {
         status: 'status',
         login: 'login',
         logout: 'logout',
         'clients-list': 'clients',
+        'clients-list-info': 'clients-info',
         'executors-list': 'executors',
-        'admins-list': 'admins'
+        'executors-list-info': 'executors-info',
+        'admins-list': 'admins',
+        'admins-list-info': 'admins-info'
     };
 
     App.routes = {
