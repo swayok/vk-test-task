@@ -35,6 +35,15 @@ $__TRANSLATIONS = array(
     'From' => 'из',
     'Newer' => 'Новее',
     'Older' => 'Старее',
+    'Edit' => 'Редактировать',
+    'Activate' => 'Активировать',
+    'Deactivate' => 'Деактивировать',
+    'Status' => 'Состояние',
+    'Created at' => 'Дата создания',
+    'Created by' => 'Создатель',
+    'Actions' => 'Действия',
+    'Active' => 'Активен',
+    'Inactive' => 'Не активен',
 );
 
 function translate($string) {

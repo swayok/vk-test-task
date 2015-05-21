@@ -22,7 +22,8 @@ AppConfigs.configureApp = function () {
         'executors-list': 'executors',
         'executors-list-info': 'executors-info',
         'admins-list': 'admins',
-        'admins-list-info': 'admins-info'
+        'admins-list-info': 'admins-info',
+        'update-admin': 'update-admin'
     };
 
     App.routes = {

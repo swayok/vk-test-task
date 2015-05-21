@@ -50,3 +50,12 @@ form .error-text {
     margin-left: 40px;
     margin-right: 40px;
 }
+
+.data-grid-table-container table tbody td {
+    vertical-align: middle;
+}
+
+.data-grid-table-container table tbody td.actions {
+    width: 50px;
+    white-space: nowrap;
+}
