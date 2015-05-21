@@ -37,6 +37,20 @@ AppComponents.setMessage = function (message, type) {
     });
 };
 
+AppComponents.setErrorMessageFromXhr = function (xhr, isNotJson) {
+    if (!isNotJson) {
+        try {
+            var json = JSON.parse(xhr.responseText);
+            if (json && json.message) {
+                AppComponents.setMessage(json.message, 'danger');
+            }
+            return;
+        } catch (exc) {}
+    }
+    //AppComponents.setMessage(xhr.responseText, 'danger');
+    AppComponents.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
+};
+
 AppComponents.hideMessage = function () {
     return AppComponents.messagesContainer.slideUp(App.animationsDurationMs);
 };
@@ -66,7 +80,7 @@ AppComponents.displayNavigationMenu = function (section, rerender) {
                 AppComponents.navigationMenus.currentSection = section;
             }).fail(function (xhr) {
                 if (App.isNotAuthorisationFailure(xhr)) {
-                    AppComponents.setMessage(xhr.responseText, 'danger');
+                    AppComponents.setErrorMessageFromXhr(xhr);
                 }
             });
             return true;

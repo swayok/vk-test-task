@@ -3,11 +3,12 @@ var App = {
     baseUrl: '/',
     viewsUrl: null,
     apiUrl: null,
-    urlArgs: {},
+    initialUrlArgs: {},
     routes: {},
     loadedRoutes: {},
     apiActions: {},
     currentRoute: null,
+    currentUrlArgs: {},
     animationsDurationMs: 150,
     userInfo: null,
     baseBrowserTitle: ''
@@ -15,9 +16,9 @@ var App = {
 
 App.init = function (urlArgs) {
     if (!!urlArgs && $.isPlainObject(urlArgs)) {
-        App.urlArgs = urlArgs;
+        App.initialUrlArgs = urlArgs;
     }
-    
+
     AppConfigs.configureApp();
 
     $(document).ready(function () {
@@ -29,21 +30,13 @@ App.init = function (urlArgs) {
             if (!$(this).attr('data-route')) {
                 $(this).attr('data-route', App.extractRouteFromUrl(this.href));
             }
-            App.urlArgs = {};
             App.setRoute($(this).attr('data-route'));
             return false;
         });
 
         window.addEventListener('popstate', function(event){
-            if (event.state) {
-                if (event.state.urlArgs) {
-                    App.urlArgs = event.state.urlArgs;
-                } else {
-                    App.urlArgs = {};
-                }
-                if (event.state.route) {
-                    App.setRoute(event.state.route);
-                }
+            if (event.state && event.state.route) {
+                App.setRoute(event.state.route, event.state, true);
             }
         }, false);
 
@@ -54,17 +47,20 @@ App.init = function (urlArgs) {
 App.getRouteUrl = function (route, urlArgs) {
     if (!route) {
         route = App.currentRoute;
-        if (!urlArgs) {
-            urlArgs = App.urlArgs;
+        if (!urlArgs || !$.isPlainObject(urlArgs)) {
+            urlArgs = App.currentUrlArgs;
         }
     }
-    delete urlArgs.route;
     if (!App.routes[route]) {
         var error = 'Unknown route [' + route + '] detected';
         AppComponents.setMessage(error, 'danger');
         return false;
     }
-    return App.baseUrl + '?route=' + route + ($.isEmptyObject(urlArgs) ? '' : '&' + $.param(urlArgs));
+    if (!urlArgs || !$.isPlainObject(urlArgs)) {
+        urlArgs = {};
+    }
+    urlArgs.route = route;
+    return App.baseUrl + '?' + $.param(urlArgs);
 };
 
 App.extractRouteFromUrl = function (url) {
@@ -86,8 +82,9 @@ App.getUser = function () {
             cache: false,
             dataType: 'json'
         }).done(function (json) {
-            if (!!App.urlArgs.route && !!App.routes[App.urlArgs.route] && App.urlArgs.route !== 'login') {
-                App.setRoute(App.urlArgs.route);
+            if (!!App.initialUrlArgs.route && !!App.routes[App.initialUrlArgs.route] && App.initialUrlArgs.route !== 'login') {
+                App.setRoute(App.initialUrlArgs.route, App.initialUrlArgs);
+                App.initialUrlArgs = {};
             } else if (!!json.route && !!App.routes[json.route]) {
                 App.setRoute(json.route);
             } else {
@@ -103,85 +100,88 @@ App.getUser = function () {
     }
 };
 
-App.setCurrentRoute = function (route) {
-    if (App.currentRoute !== route) {
+App.setCurrentRoute = function (route, urlArgs) {
+    if (!urlArgs || !$.isPlainObject(urlArgs)) {
+        urlArgs = {};
+    }
+    urlArgs.route = route;
+    if (App.currentRoute !== route || !Utils.compareObjects(urlArgs, App.currentUrlArgs)) {
+        if (App.currentRoute !== route) {
+            App.container.find('a.active').removeClass('active').end()
+                .find('a[href*="?route=' + route + '"]').addClass('active');
+            AppComponents.activateNavigationMenuButton(route);
+        }
+        App.currentUrlArgs = urlArgs;
         App.currentRoute = route;
-        App.container.find('a.active').removeClass('active').end()
-            .find('a[href*="?route=' + route + '"]').addClass('active');
-        AppComponents.activateNavigationMenuButton(route);
+        return true;
+    } else {
+        return false;
     }
 };
 
-App.setRoute = function (route, doNotChangeUrl, message) {
-    if (!!message) {
-        if ($.isPlainObject(message)) {
-            AppComponents.setMessage(message.message, message.type);
-        } else {
-            AppComponents.setMessage(message);
-        }
-    } else {
-        AppComponents.hideMessage();
-    }
+App._changeBrowserUrl = function () {
+    window.history.pushState(App.currentUrlArgs, null, App.getRouteUrl());
+};
+
+App.setRoute = function (route, urlArgs, doNotChangeUrl) {
+    AppComponents.hideMessage();
     if (!route || !App.routes[route]) {
         var error = 'Unknown route [' + route + '] detected';
         AppComponents.setMessage(error, 'danger');
         return false;
     }
     var routeInfo = App.routes[route];
-    if (routeInfo.canBeReloaded || App.currentRoute !== route) {
-        App.setCurrentRoute(route);
+    var isDifferentRoute = App.setCurrentRoute(route, urlArgs);
+    if (isDifferentRoute || routeInfo.canBeReloaded) {
         if (!routeInfo.url) {
             routeInfo.controller();
         } else if (!App.loadedRoutes[route]) {
-            App.isLoading(true);
-            $.ajax({
-                url: routeInfo.url,
-                cache: true
-            }).done(function (html) {
-                // use <h1> text as browser title
-                var browserTitle = App.baseBrowserTitle;
-                var matches = html.match(/<h1[^>]*>([\s\S]+)<\/h1/i);
-                if (matches && matches.length) {
-                    browserTitle = matches[1] + ' - ' + browserTitle;
-                }
-                document.title = browserTitle;
-
-                var template = '<div class="content-wrapper" id="' + route + '-action-container">' + html + '</div>';
-                if (!!routeInfo.compileTemplate) {
-                    template = doT.template(template);
-                } else {
-                    template = $.parseHTML(template);
-                }
-
-                if (!!routeInfo.cache) {
-                    App.loadedRoutes[route] = {
-                        template: template,
-                        browserTitle: browserTitle
-                    };
-                }
-
-                routeInfo.controller(template, false);
-            }).fail(function (xhr) {
-                App.isLoading(false);
-                if (!App.isAuthorisationFailure(xhr)) {
-                    AppComponents.setMessage(xhr.responseText, 'danger');
-                }
-            });
+            App._loadViewForRoute(route, routeInfo)
         } else {
             document.title = App.loadedRoutes[route].browserTitle;
             routeInfo.controller(App.loadedRoutes[route].template, true);
         }
-        if (!doNotChangeUrl) {
-            if (App.urlArgs.route) {
-                delete App.urlArgs.route;
-            }
-            window.history.pushState(
-                {route: App.currentRoute, urlArgs: App.urlArgs},
-                null,
-                App.getRouteUrl()
-            );
+        if (!doNotChangeUrl && isDifferentRoute) {
+            App._changeBrowserUrl();
         }
     }
+};
+
+App._loadViewForRoute = function (route, routeInfo) {
+    App.isLoading(true);
+    $.ajax({
+        url: routeInfo.url,
+        cache: true
+    }).done(function (html) {
+        // use <h1> text as browser title
+        var browserTitle = App.baseBrowserTitle;
+        var matches = html.match(/<h1[^>]*>([\s\S]+)<\/h1/i);
+        if (matches && matches.length) {
+            browserTitle = matches[1] + ' - ' + browserTitle;
+        }
+        document.title = browserTitle;
+
+        var template = '<div class="content-wrapper" id="' + route + '-action-container">' + html + '</div>';
+        if (!!routeInfo.compileTemplate) {
+            template = doT.template(template);
+        } else {
+            template = $.parseHTML(template);
+        }
+
+        if (!!routeInfo.cache) {
+            App.loadedRoutes[route] = {
+                template: template,
+                browserTitle: browserTitle
+            };
+        }
+
+        routeInfo.controller(template, false);
+    }).fail(function (xhr) {
+        App.isLoading(false);
+        if (!App.isAuthorisationFailure(xhr)) {
+            AppComponents.setErrorMessageFromXhr();
+        }
+    });
 };
 
 App.isLoading = function (yes) {
@@ -213,12 +213,8 @@ App.isAuthorisationFailure = function (xhr) {
 
 App.isNotAuthorisationFailure = function (xhr) {
     if (App.isAuthorisationFailure(xhr)) {
-        try {
-            var json = JSON.parse(xhr.responseText);
-            App.setRoute('login', false, json.message ? {type: 'danger', message: json.message} : null);
-        } catch (exc) {
-            App.setRoute('login');
-        }
+        App.setRoute('login');
+        AppComponents.setErrorMessageFromXhr(xhr);
         return false;
     }
     return true;
@@ -250,10 +246,8 @@ App.removeFormValidationErrors = function (form, hideMessage) {
 
 App.applyFormValidationErrors = function (form, xhr) {
     $.when(App.removeFormValidationErrors(form, true)).done(function () {
-        var response = JSON.parse(xhr.responseText);
-        if (!response) {
-            AppComponents.setMessage(xhr.responseText);
-        } else {
+        try {
+            var response = JSON.parse(xhr.responseText);
             if (response.message) {
                 AppComponents.setMessage(response.message, 'danger');
             }
@@ -266,6 +260,8 @@ App.applyFormValidationErrors = function (form, xhr) {
                     }
                 }
             }
+        } catch (exc) {
+            AppComponents.setErrorMessageFromXhr(xhr, true);
         }
     });
 };

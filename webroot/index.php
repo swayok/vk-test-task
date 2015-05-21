@@ -24,6 +24,7 @@ require_once __DIR__ . '/../src/configs/bootstrap.php';
     <script src="/js/jquery/jquery-2.1.4.min.js"></script>
     <script src="/js/doT.min.js"></script>
     <script src="/css/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/js/utils.js"></script>
     <script src="/js/app.configs.js"></script>
     <script src="/js/app.components.js"></script>
     <script src="/js/app.controllers.js"></script>

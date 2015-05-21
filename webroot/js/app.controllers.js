@@ -75,7 +75,7 @@ AppController.adminUsersDataGrid = function (dataGridTemplate, role, isFromCache
         total: 0,
         pages: 1,
         items_per_page: 25,
-        page: App.urlArgs.page > 1 ? parseInt(App.urlArgs.page) : 1
+        page: App.currentUrlArgs.page > 1 ? App.currentUrlArgs.page - 0 : 1
     };
     var paginationInfoAjaxOptions = {
         url: App.getApiUrl(role + 's-list-info'),
@@ -96,7 +96,7 @@ AppController.adminUsersDataGrid = function (dataGridTemplate, role, isFromCache
     }).fail(function (xhr) {
         if (App.isNotAuthorisationFailure(xhr)) {
             App.setRoute(App.userInfo && App.userInfo.route ? App.userInfo.route : 'login');
-            AppComponents.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
+            AppComponents.setErrorMessageFromXhr(xhr);
         }
     }).always(function () {
         App.isLoading(false);
@@ -104,18 +104,23 @@ AppController.adminUsersDataGrid = function (dataGridTemplate, role, isFromCache
     // apply events
     AppController.dataGridPaginationContainer.on('click', 'a.next-page, a.prev-page', function () {
         var newPageNum = AppController.dataGridPaginationInfo.page + ($(this).hasClass('next-page') ? 1 : -1);
-        if (!$(this).parent().hasClass('disabled') && newPageNum > 0 && newPageNum <= AppController.dataGridPaginationInfo.pages) {
+        if (
+            !$(this).parent().hasClass('disabled')
+            && newPageNum > 0
+            && newPageNum <= AppController.dataGridPaginationInfo.pages
+        ) {
+            var justReloadData = AppController.dataGridPaginationInfo.page === newPageNum;
             AppController.dataGridPaginationInfo.page = newPageNum;
             var html = AppComponents.getPaginationTemplate(AppController.dataGridPaginationInfo);
             AppController.dataGridPaginationContainer.html(html);
-            AppController.adminLoadUsers(role, dataGridTemplate);
+            AppController.adminLoadUsers(role, dataGridTemplate, false, justReloadData);
         }
         return false;
     });
 
 };
 
-AppController.adminLoadUsers = function (role, dataGridTemplate, returnDeferred) {
+AppController.adminLoadUsers = function (role, dataGridTemplate, returnDeferred, justReloadData) {
     var request = $.ajax({
         url: App.getApiUrl(role + 's-list') + '&page=' + AppController.dataGridPaginationInfo.page,
         method: 'GET',
@@ -125,13 +130,15 @@ AppController.adminLoadUsers = function (role, dataGridTemplate, returnDeferred)
     if (returnDeferred) {
         return request;
     }
-    AppController.adminDataGridChangeUrl();
+    if (!justReloadData) {
+        AppController.adminDataGridChangeUrl();
+    }
     AppController.dataGridTableContainer.addClass('loading');
     request.done(function (items) {
         AppController.dataGridTableContainer.html(dataGridTemplate({items: items}));
     }).fail(function (xhr) {
         if (App.isNotAuthorisationFailure(xhr)) {
-            AppComponents.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
+            AppComponents.setErrorMessageFromXhr(xhr);
         }
     }).always(function () {
         setTimeout(function () {
@@ -141,8 +148,6 @@ AppController.adminLoadUsers = function (role, dataGridTemplate, returnDeferred)
 };
 
 AppController.adminDataGridChangeUrl = function () {
-    App.urlArgs.page = AppController.dataGridPaginationInfo.page;
-    var newUrl = App.getRouteUrl();
-    var data = {route: App.currentRoute, urlArgs: {page: AppController.dataGridPaginationInfo.page}};
-    window.history.pushState(data, null, newUrl);
+    App.currentUrlArgs.page = AppController.dataGridPaginationInfo.page;
+    App._changeBrowserUrl();
 };
