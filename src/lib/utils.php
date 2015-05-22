@@ -21,11 +21,7 @@ function setHttpCode($httpCode) {
 }
 
 function terminate($httpCode, array $response = array()) {
-    setHttpCode($httpCode);
-    if (!empty($response)) {
-        echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    }
-    exit;
+    throw new \Exception(json_encode($response, JSON_UNESCAPED_UNICODE), $httpCode);
 }
 
 function hashPassword($password) {

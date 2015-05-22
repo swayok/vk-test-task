@@ -185,12 +185,20 @@ function createUsersAndLogin() {
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
     $GLOBALS['__REQUEST_INFO']['isGet'] = false;
 
-    /*$response = \Api\AdminActions\addAdmin();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_UNAUTHORIZED)
-        && \TestTools\assertHasKeys($response, array('route'))
-    );
-    \TestTools\addTestResult('admin not logged in', $success, $response);*/
+    try {
+        $response = \Api\AdminActions\addAdmin();
+        \TestTools\addTestResult('admin not logged in: exception', false, $response);
+    } catch (\Exception $exc) {
+        $success = (
+            \TestTools\assertEquals($exc->getCode(), 401)
+            && \TestTools\assertHasKeys(json_decode($exc->getMessage(), true), array('message', 'route'))
+        );
+        \TestTools\addTestResult('admin not logged in: exception', $success, array(
+            'message' => $exc->getMessage(),
+            'exc' => $exc->getCode(),
+            'trace' => $exc->getTraceAsString()
+        ));
+    }
 
     // get admin account to be able create test users
     $admin = \Db\select('SELECT * FROM `vktask1`.`admins` LIMIT 1');
