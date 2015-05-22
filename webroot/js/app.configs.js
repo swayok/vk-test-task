@@ -17,10 +17,15 @@ AppConfigs.configureApp = function () {
         status: 'status',
         login: 'login',
         logout: 'logout',
+
         'clients-list': 'clients',
         'clients-list-info': 'clients-info',
+        'update-client': 'update-client',
+
         'executors-list': 'executors',
         'executors-list-info': 'executors-info',
+        'update-executor': 'update-executor',
+
         'admins-list': 'admins',
         'admins-list-info': 'admins-info',
         'update-admin': 'update-admin'

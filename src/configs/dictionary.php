@@ -44,6 +44,9 @@ $__TRANSLATIONS = array(
     'Actions' => 'Действия',
     'Active' => 'Активен',
     'Inactive' => 'Не активен',
+    'Add admin' => 'Добавить администратора',
+    'Add client' => 'Добавить клиента',
+    'Add executor' => 'Добавить исполнителя',
 );
 
 function translate($string) {

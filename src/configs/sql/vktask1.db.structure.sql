@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `executors` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `balance` FLOAT( 10, 2 ) NOT NULL DEFAULT  '0.00',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `created_by` (`created_by`),

@@ -59,3 +59,25 @@ form .error-text {
     width: 50px;
     white-space: nowrap;
 }
+
+.data-grid-table-container .deactivate-link,
+.data-grid-table-container .activate-link {
+    width: 130px;
+}
+
+.data-grid-header {
+    margin: 30px 0 30px 0;
+}
+
+.data-grid-header h1 {
+    margin: 0;
+    line-height: 40px;
+}
+
+.data-grid-header > div {
+    line-height: 40px;
+}
+
+.data-grid-header > div.actions {
+    text-align: right;
+}

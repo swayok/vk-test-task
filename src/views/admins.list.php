@@ -1,4 +1,14 @@
-<h1><?php echo \Dictionary\translate('Admins'); ?></h1>
+<div class="row data-grid-header">
+    <div class="col-md-9">
+        <h1><?php echo \Dictionary\translate('Admins'); ?></h1>
+    </div>
+    <div class="col-md-3 actions">
+        <a href="?route=admin/admin-add" class="create-link btn btn-primary btn-sm">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            <?php echo \Dictionary\translate('Add admin'); ?>
+        </a>
+    </div>
+</div>
 
 <table class="table table-striped table-hover">
     <thead>
@@ -6,7 +16,10 @@
             <th><?php echo \Dictionary\translate('ID'); ?></th>
             <th><?php echo \Dictionary\translate('E-mail'); ?></th>
             <th><?php echo \Dictionary\translate('Status'); ?></th>
-            <th><?php echo \Dictionary\translate('Created at'); ?></th>
+            <th>
+                <?php echo \Dictionary\translate('Created at'); ?>
+                <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
+            </th>
             <th><?php echo \Dictionary\translate('Created by'); ?></th>
             <th><?php echo \Dictionary\translate('Actions'); ?></th>
         </tr>
@@ -17,15 +30,16 @@
             <td>{{=item.id}}</td>
             <td>{{=item.email}}</td>
             {{?item.is_active == 1}}
-                <td class="bg-success"><?php echo \Dictionary\translate('Active'); ?>{{?}}</td>
+                <td class="success"><?php echo \Dictionary\translate('Active'); ?>{{?}}</td>
             {{?item.is_active == 0}}
-                <td class="bg-danger"><?php echo \Dictionary\translate('Inactive'); ?></td>
+                <td class="danger"><?php echo \Dictionary\translate('Inactive'); ?></td>
             {{?}}
             <td>{{=item.created_at}}</td>
             <td>{{=item.creator_email || ''}}</td>
             <td class="actions">
                 <a data-route="admin/admin-edit" data-params="id={{=item.id}}"
                    class="edit-link btn btn-primary btn-sm" href="javascript:void(0)">
+                    <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                     <?php echo \Dictionary\translate('Edit'); ?>
                 </a>
                 {{? item.is_active == 1 }}
@@ -36,7 +50,7 @@
                 {{?}}
                 {{? item.is_active == 0 }}
                     <a data-api-action="update-admin" data-params="id={{=item.id}}&is_active=1" data-method="post"
-                       class="deactivate-link btn btn-success btn-sm" href="javascript:void(0)">
+                       class="activate-link btn btn-success btn-sm" href="javascript:void(0)">
                         <?php echo \Dictionary\translate('Activate'); ?>
                     </a>
                 {{?}}
