@@ -1,4 +1,4 @@
-<form id="login-form" onsubmit="return false;">
+<form id="login-form" onsubmit="return false;" method="post" data-api-action="login">
     <h1><?php echo \Dictionary\translate('Authorisation'); ?></h1>
     <div class="inputs">
         <div class="form-group">

@@ -65,7 +65,10 @@ $__TRANSLATIONS = array(
     'Client\'s account created successfully' => 'Учетная запись клиента успешно создана',
     'Executor\'s account created successfully' => 'Учетная запись исполнителя успешно создана',
     'Cancel' => 'Отмена',
-    'Account with entered e-mail address already exists' => 'Учетная запись с таким e-mail адресом уже существует'
+    'Account with entered e-mail address already exists' => 'Учетная запись с таким e-mail адресом уже существует',
+    'Role is required' => 'Учетная запись с таким e-mail адресом уже существует',
+    'Your account updated successfully' => 'Данные учетной записи успешно обновлены',
+    'Form data does not match authorised user data' => 'Данные формы не соответствуют данным авторизованного пользователя'
 );
 
 function translate($string) {

@@ -19,6 +19,7 @@ function runAction($action) {
 
     $currentUser = \Api\CommonActions\_getAuthorisedUser();
     if (!empty($currentUser) && !empty($currentUser['role'])) {
+        $allowedActions['update-profile'] = '\Api\CommonActions\updateProfile';
         switch ($currentUser['role']) {
             case 'admin':
                 require_once 'api.admin.actions.php';

@@ -75,26 +75,31 @@ App.setUser = function (userInfo) {
     }
 };
 
-App.getUser = function () {
-    if (!$.isPlainObject(App.userInfo)) {
-        return $.ajax({
-            url: App.apiUrl + App.apiActions.status,
+App.getUser = function (reload) {
+    if (!$.isPlainObject(App.userInfo) || reload) {
+        var deferred = $.Deferred();
+        $.ajax({
+            url: App.getApiUrl('status'),
             cache: false,
             dataType: 'json'
         }).done(function (json) {
-            if (!!App.initialUrlArgs.route && !!App.routes[App.initialUrlArgs.route] && App.initialUrlArgs.route !== 'login') {
-                App.setRoute(App.initialUrlArgs.route, App.initialUrlArgs);
-                App.initialUrlArgs = {};
-            } else if (!!json.route && !!App.routes[json.route]) {
-                App.setRoute(json.route);
-            } else {
-                App.setRoute('login');
-                return;
+            if (!reload) {
+                if (!!App.initialUrlArgs.route && !!App.routes[App.initialUrlArgs.route] && App.initialUrlArgs.route !== 'login') {
+                    App.setRoute(App.initialUrlArgs.route, App.initialUrlArgs);
+                    App.initialUrlArgs = {};
+                } else if (!!json._route && !!App.routes[json._route]) {
+                    App.setRoute(json._route);
+                } else {
+                    App.setRoute('login');
+                    return;
+                }
             }
             App.setUser(json);
+            deferred.resolve(App.userInfo);
         }).fail(function (xhr) {
             App.setRoute('login');
         });
+        return deferred;
     } else {
         return App.userInfo;
     }
@@ -153,7 +158,6 @@ App.setRoute = function (route, urlArgs, doNotChangeUrl) {
 };
 
 App.goBack = function (routeToSearchFor, fallbackArgs) {
-    console.log(window.history, routeToSearchFor);
     if (window.history.length > 1) {
         window.history.back();
     } else {
@@ -197,7 +201,7 @@ App._loadViewForRoute = function (route, routeInfo) {
     }).fail(function (xhr) {
         App.isLoading(false);
         if (!App.isAuthorisationFailure(xhr)) {
-            AppComponents.setErrorMessageFromXhr();
+            AppComponents.setErrorMessageFromXhr(xhr);
         }
     });
 };

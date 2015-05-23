@@ -16,8 +16,12 @@ AppComponents.init = function () {
     AppComponents.navigationMenus.container = $('<div id="page-navigation"></div>');
     App.container.before(AppComponents.navigationMenus.container);
 
-    AppComponents.messagesContainer = $('<div id="page-messages"></div>').hide();
+    AppComponents.messagesContainer = $('<div id="page-messages" title="click to hide"></div>').hide();
     $(document.body).prepend(AppComponents.messagesContainer);
+    AppComponents.messagesContainer.on('click', function () {
+        AppComponents.messagesContainer.slideUp();
+        return false;
+    })
 };
 
 AppComponents.setMessage = function (message, type) {
@@ -140,7 +144,10 @@ AppComponents.initForm = function (onSuccessCallback) {
         }).done(function (json) {
             var proceed = true;
             if (typeof onSuccessCallback === 'function') {
-                proceed = onSuccessCallback(json, form)
+                proceed = onSuccessCallback(json, form);
+                if (typeof proceed === 'undefined') {
+                    proceed = true;
+                }
             }
             if (proceed) {
                 if (json._message) {

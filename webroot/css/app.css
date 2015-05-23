@@ -30,6 +30,7 @@ form .checkbox .error-text {
 
 #page-messages {
     width: 100%;
+    cursor: pointer;
 }
 
 #page-messages .container {

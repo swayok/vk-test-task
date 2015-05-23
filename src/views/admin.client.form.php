@@ -1,4 +1,4 @@
-<form id="admin-client-form" class="user-form" onsubmit="return false;"
+<form id="admin-client-form" class="user-form" method="post" onsubmit="return false;"
       data-api-action="{{? it.editMode }}update-client{{?}}{{? !it.editMode }}add-client{{?}}"
       data-after-save-go-to="{{= it.backUrl }}">
     {{? it.editMode }}
@@ -33,7 +33,7 @@
         <div class="checkbox">
             <input name="is_active" type="hidden" id="_user-is-active" value="0">
             <label for="user-is-active">
-                <input name="is_active" type="checkbox" value="1" {{? it.item.is_active == 1 }}checked{{?}}
+                <input name="is_active" type="checkbox" value="1" {{? !it.editMode || it.item.is_active == 1 }}checked{{?}}
                        id="user-is-active">
                 <?php echo \Dictionary\translate('Authorisation is allowed'); ?>
             </label>

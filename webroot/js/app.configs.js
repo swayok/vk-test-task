@@ -17,6 +17,7 @@ AppConfigs.configureApp = function () {
         status: 'status',
         login: 'login',
         logout: 'logout',
+        'update-profile': 'update-profile',
 
         'clients-list': 'clients-list',
         'clients-list-info': 'clients-list-info',
@@ -147,6 +148,16 @@ AppConfigs.configureApp = function () {
             compileTemplate: true,
             controller: function (template, isFromCache) {
                 AppController.adminUserForm(template, 'admin', true, isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+        'admin-profile': {
+            section: 'admin',
+            url: App.viewsUrl + 'admin.profile.form',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.profileForm(template, 'admin', isFromCache);
             },
             cache: true,
             canBeReloaded: true

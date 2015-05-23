@@ -17,6 +17,9 @@ function loginStatus() {
     }
 }
 
+/**
+ * @return bool|array
+ */
 function _getAuthorisedUser() {
     if (!empty($_SESSION['client']) && !empty($_SESSION['client']['id'])) {
         return $_SESSION['client'];
@@ -112,4 +115,79 @@ function login() {
 function logout() {
     unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
     return array('route' => 'login');
+}
+
+function updateProfile() {
+    if (!\Request\isPost()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $currentUser = _getAuthorisedUser();
+    if (!$currentUser) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    $errors = \Utils\validateData($_POST, array(
+        'id' => array(
+            'required' => true,
+            'type' => 'id',
+            'regexp' => "%^{$currentUser['id']}$%",
+            'convert' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('ID is required'),
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+        'role' => array(
+            'required' => true,
+            'convert' => false,
+            'regexp' => "%^{$currentUser['role']}$%i",
+            'remove_if_empty' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('Role is required'),
+                'regexp' => \Dictionary\translate('Invalid value'),
+            )
+        )
+    ));
+    if (!empty($errors)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array('errors' => $errors, 'message' => \Dictionary\translate('Form data does not match authorised user data'));
+    }
+    $allowedFields = array('password');
+    $dataToUpdate = array_intersect_key($_POST, array_flip($allowedFields));
+    if (empty($dataToUpdate['password'])) {
+        unset($dataToUpdate['password']); ///< avoid saving empty password
+    } else {
+        $dataToUpdate['password'] = \Utils\hashPassword($dataToUpdate['password']);
+    }
+    if (empty($dataToUpdate)) {
+        return $currentUser;
+    }
+
+    try {
+        $table = "`vktask1`.`{$currentUser['role']}s`";
+        if (!\Db\idExists($_POST['id'], $table)) {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+            return array(
+                'message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                'errors' => array(
+                    'id' => \Dictionary\translate('Invalid value')
+                )
+            );
+        }
+        $user = \Db\updateById($dataToUpdate, $table, $_POST['id']);
+        if (!empty($user)) {
+            $user = array_replace(
+                $currentUser,
+                array_intersect_key($user, array('id' => '', 'email' => ''))
+            );
+            $_SESSION[$currentUser['role']] = $user;
+            $user['_message'] = \Dictionary\translate('Your account updated successfully');
+            return $user;
+        } else {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+            return array('message' => \Dictionary\translate('Failed to save data to DB'));
+        }
+    } catch (\Exception $exc) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+        return array('message' => $exc->getMessage());
+    }
 }

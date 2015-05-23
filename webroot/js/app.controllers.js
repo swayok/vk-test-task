@@ -3,37 +3,16 @@ var AppController = {
     dataGridTableContainer: null,
     dataGridPaginationContainer: null,
     dataGridPaginationInfo: {},
-    dataGridTemplate: null,
+    dataGridTemplate: null
 };
 
 AppController.loginForm = function (element, isFromCache) {
     App.container.html('').append(element);
     App.setUser(null);
     App.isLoading(false);
-    var form = App.container.find('form');
-    form[0].reset();
-    form.on('submit', function (event) {
-        AppComponents.removeFormValidationErrors(form, true);
-        form.addClass('loading');
-        var data = AppComponents.collectFormData(form);
-        $.ajax({
-            url: App.getApiUrl('login'),
-            method: 'POST',
-            data: data,
-            dataType: 'json'
-        }).done(function (json) {
-            App.setUser(json);
-            App.setRoute(json.route);
-        }).fail(function (xhr) {
-            if (App.isNotAuthorisationFailure(xhr)) {
-                AppComponents.applyFormValidationErrors(form, xhr);
-            }
-        }).always(function () {
-            setTimeout(function () {
-                form.removeClass('loading');
-            }, 200);
-        });
-        return false;
+    App.container.find('form')[0].reset();
+    AppComponents.initForm(function (json, form) {
+        App.setUser(json);
     });
 };
 
@@ -97,7 +76,7 @@ AppController.adminUsersDataGrid = function (dataGridTemplate, role, isFromCache
         AppController.dataGridPaginationContainer.html(paginationTemplate(AppController.dataGridPaginationInfo));
     }).fail(function (xhr) {
         if (App.isNotAuthorisationFailure(xhr)) {
-            App.setRoute(App.userInfo && App.userInfo.route ? App.userInfo.route : 'login');
+            App.setRoute(App.userInfo && App.userInfo._route ? App.userInfo._route : 'login');
             AppComponents.setErrorMessageFromXhr(xhr);
         }
     }).always(function () {
@@ -142,8 +121,8 @@ AppController.adminDataGridApplyEventHandlers = function (role) {
                 dataType: 'json',
                 cache: false
             }).done(function (json) {
-                if (json.message) {
-                    AppComponents.setMessage(json.message, 'success');
+                if (json._message) {
+                    AppComponents.setMessage(json._message, 'success');
                 }
                 AppController.adminLoadUsers(role, false, true);
             }).fail(function () {
@@ -227,10 +206,22 @@ AppController.adminUserForm = function (template, role, editMode, isFromCache) {
             }
         }).always(function () {
             App.isLoading(false);
-        })
+        });
     } else {
         App.container.html(template({editMode: editMode, item: {}, backUrl: backUrl}));
         AppComponents.initForm();
         App.isLoading(false);
     }
+};
+
+AppController.profileForm = function (template, role, isFromCache) {
+    AppComponents.displayNavigationMenu(role);
+    App.isLoading(true);
+    $.when(App.getUser(true))
+        .done(function (item) {
+            App.container.html(template({item: item}));
+            AppComponents.initForm();
+        }).always(function () {
+            App.isLoading(false);
+        });
 };

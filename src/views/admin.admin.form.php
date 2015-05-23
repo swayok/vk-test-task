@@ -1,4 +1,4 @@
-<form id="admin-admin-form" class="user-form" onsubmit="return false;" autocomplete="off"
+<form id="admin-admin-form" class="user-form" method="post" onsubmit="return false;" autocomplete="off"
       data-api-action="{{? it.editMode }}update-admin{{?}}{{? !it.editMode }}add-admin{{?}}"
       data-after-save-go-to="{{= it.backUrl }}">
     {{? it.editMode }}
@@ -33,7 +33,7 @@
         <div class="checkbox">
             <input name="is_active" type="hidden" id="_user-is-active" value="0">
             <label for="user-is-active">
-                <input name="is_active" type="checkbox" value="1" {{? it.item.is_active == 1 }}checked{{?}}
+                <input name="is_active" type="checkbox" value="1" {{? !it.editMode || it.item.is_active == 1 }}checked{{?}}
                        id="user-is-active" autocomplete="off">
                 <?php echo \Dictionary\translate('Authorisation is allowed'); ?>
             </label>
