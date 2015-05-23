@@ -3,7 +3,7 @@
         <h1><?php echo \Dictionary\translate('Admins'); ?></h1>
     </div>
     <div class="col-md-3 actions">
-        <a href="?route=admin/admin-add" class="create-link btn btn-primary btn-sm">
+        <a href="/?route=admin-admin-add" data-add-back-url="1" class="create-link btn btn-primary btn-sm">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             <?php echo \Dictionary\translate('Add admin'); ?>
         </a>
@@ -37,20 +37,22 @@
             <td>{{=item.created_at}}</td>
             <td>{{=item.creator_email || ''}}</td>
             <td class="actions">
-                <a data-route="admin/admin-edit" data-params="id={{=item.id}}"
+                <a data-route="admin-admin-edit" data-args="id={{=item.id}}"
                    class="edit-link btn btn-primary btn-sm" href="javascript:void(0)">
                     <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                     <?php echo \Dictionary\translate('Edit'); ?>
                 </a>
                 {{? item.is_active == 1 }}
-                    <a data-api-action="update-admin" data-params="id={{=item.id}}&is_active=0" data-method="post"
+                    <a data-api-action="update-admin" data-args="id={{=item.id}}&is_active=0" data-method="post"
                        class="deactivate-link btn btn-danger btn-sm" href="javascript:void(0)">
+                        <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
                         <?php echo \Dictionary\translate('Deactivate'); ?>
                     </a>
                 {{?}}
                 {{? item.is_active == 0 }}
-                    <a data-api-action="update-admin" data-params="id={{=item.id}}&is_active=1" data-method="post"
+                    <a data-api-action="update-admin" data-args="id={{=item.id}}&is_active=1" data-method="post"
                        class="activate-link btn btn-success btn-sm" href="javascript:void(0)">
+                        <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
                         <?php echo \Dictionary\translate('Activate'); ?>
                     </a>
                 {{?}}

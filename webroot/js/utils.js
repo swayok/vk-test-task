@@ -91,3 +91,15 @@ Utils.compareObjects = function (x, y) {
 
     return true;
 };
+
+Utils.parseUrlQuery = function (query) {
+    var args = {};
+    var queryParts = query.replace(/^.*?\?/, '').split('&');
+    for (var i = 0; i < queryParts.length; i++) {
+        var keyValue = queryParts[i].split('=', 2);
+        if (keyValue.length == 2) {
+            args[keyValue[0]] = keyValue[1];
+        }
+    }
+    return args;
+};

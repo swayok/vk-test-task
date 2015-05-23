@@ -9,6 +9,7 @@ var App = {
     apiActions: {},
     currentRoute: null,
     currentUrlArgs: {},
+    messageAfterRouteChange: null,
     animationsDurationMs: 150,
     userInfo: null,
     baseBrowserTitle: ''
@@ -26,11 +27,15 @@ App.init = function (urlArgs) {
         App.container = $(App.container);
         AppComponents.init();
 
-        $(document.body).on('click', 'a[href^="/"]', function () {
-            if (!$(this).attr('data-route')) {
-                $(this).attr('data-route', App.extractRouteFromUrl(this.href));
+        $(document.body).on('click', 'a[href]', function () {
+            if (!this.href.match(document.location.origin)) {
+                return true;
             }
-            App.setRoute($(this).attr('data-route'));
+            var urlArgs = Utils.parseUrlQuery(this.href);
+            if ($(this).attr('data-add-back-url') == '1') {
+                urlArgs.back_url = App.getRouteUrl();
+            }
+            App.setRoute(urlArgs.route, urlArgs);
             return false;
         });
 
@@ -61,11 +66,6 @@ App.getRouteUrl = function (route, urlArgs) {
     }
     urlArgs.route = route;
     return App.baseUrl + '?' + $.param(urlArgs);
-};
-
-App.extractRouteFromUrl = function (url) {
-    var matches = url.match(/^.*?\?.*?route=([a-zA-Z\-_0-9]+)/i);
-    return matches && matches[1] ? matches[1] : '__undefined__route__';
 };
 
 App.setUser = function (userInfo) {
@@ -124,7 +124,12 @@ App._changeBrowserUrl = function () {
 };
 
 App.setRoute = function (route, urlArgs, doNotChangeUrl) {
-    AppComponents.hideMessage();
+    if (App.messageAfterRouteChange) {
+        AppComponents.setMessage(App.messageAfterRouteChange);
+        App.messageAfterRouteChange = null;
+    } else {
+        AppComponents.hideMessage();
+    }
     if (!route || !App.routes[route]) {
         var error = 'Unknown route [' + route + '] detected';
         AppComponents.setMessage(error, 'danger');
@@ -145,6 +150,19 @@ App.setRoute = function (route, urlArgs, doNotChangeUrl) {
             App._changeBrowserUrl();
         }
     }
+};
+
+App.goBack = function (routeToSearchFor, fallbackArgs) {
+    console.log(window.history, routeToSearchFor);
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        App.setRoute(routeToSearchFor, fallbackArgs);
+    }
+};
+
+App.setMessageAfterRouteChange = function (message, type) {
+    App.messageAfterRouteChange = {message: message, type: type};
 };
 
 App._loadViewForRoute = function (route, routeInfo) {
@@ -200,7 +218,7 @@ App.getApiUrl = function (action) {
         AppComponents.setMessage(error, 'danger');
         throw error;
     }
-    return App.apiUrl + action;
+    return App.apiUrl + App.apiActions[action];
 };
 
 App.isValidationErrors = function (xhr) {
@@ -220,49 +238,4 @@ App.isNotAuthorisationFailure = function (xhr) {
     return true;
 };
 
-App.collectFormData = function (form) {
-    var dataObject = {};
-    var dataArray = form.serializeArray();
-    $.each(dataArray, function() {
-        if (dataObject[this.name] !== undefined) {
-            if (!dataObject[this.name].push) {
-                dataObject[this.name] = [dataObject[this.name]];
-            }
-            dataObject[this.name].push(this.value || '');
-        } else {
-            dataObject[this.name] = this.value || '';
-        }
-    });
-    return dataObject;
-};
-
-App.removeFormValidationErrors = function (form, hideMessage) {
-    if (!!hideMessage) {
-        AppComponents.hideMessage();
-    }
-    form.find('.has-error').removeClass('has-error');
-    return form.find('.error-text').slideUp(App.animationsDurationMs);
-};
-
-App.applyFormValidationErrors = function (form, xhr) {
-    $.when(App.removeFormValidationErrors(form, true)).done(function () {
-        try {
-            var response = JSON.parse(xhr.responseText);
-            if (response.message) {
-                AppComponents.setMessage(response.message, 'danger');
-            }
-            if (response.errors && $.isPlainObject(response.errors)) {
-                for (var inputName in response.errors) {
-                    if (form[0][inputName]) {
-                        var errorEl = $('<div class="error-text bg-danger">' + response.errors[inputName] + '</div>').hide();
-                        $(form[0][inputName]).parent().addClass('has-error').append(errorEl);
-                        errorEl.slideDown(App.animationsDurationMs);
-                    }
-                }
-            }
-        } catch (exc) {
-            AppComponents.setErrorMessageFromXhr(xhr, true);
-        }
-    });
-};
 

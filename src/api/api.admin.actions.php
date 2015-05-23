@@ -50,6 +50,14 @@ function _addUser($role) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
         return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
     }
+    $table = "`vktask1`.`{$role}s`";
+    if (\Db\selectValue("SELECT `id` FROM {$table} WHERE `email` = :email", array('email' => $_POST['email'])) > 0) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array(
+            'errors' => array('email' => \Dictionary\translate('Account with entered e-mail address already exists')),
+            'message' => \Dictionary\translate('Form contains invalid data')
+        );
+    }
 
     $user = array(
         'email' => strtolower($_POST['email']),
@@ -59,13 +67,69 @@ function _addUser($role) {
     );
 
     try {
-        $user = \Db\insert($user, "`vktask1`.`{$role}s`");
+        $user = \Db\insert($user, $table);
         if (!empty($user)) {
             $user = array_intersect_key($user, array('id' => '', 'email' => '', 'is_active' => ''));
+            $user['_message'] = \Dictionary\translate(ucfirst($role) . '\'s account created successfully');
             return $user;
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
             return array('message' => \Dictionary\translate('Failed to save data to DB'));
+        }
+    } catch (\Exception $exc) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+        return array('message' => $exc->getMessage());
+    }
+}
+
+function getAdmin() {
+    return _getUser('admin', array('id', 'email', 'is_active'));
+}
+
+function getClient() {
+    return _getUser('client', array('id', 'email', 'is_active'));
+}
+
+function getExecutor() {
+    return _getUser('executor', array('id', 'email', 'is_active'));
+}
+
+function _getUser($role, $fields) {
+    if (!\Api\CommonActions\_isAuthorisedAs('admin')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isGet()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $errors = \Utils\validateData($_GET, array(
+        'id' => array(
+            'required' => true,
+            'type' => 'id',
+            'convert' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('ID is required'),
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+    ));
+    if (!empty($errors)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array('errors' => $errors, 'message' => \Dictionary\translate('Invalid request data'));
+    }
+    try {
+        $fields = '`' . implode('`,`', $fields) . '`';
+        $id = \Db\quoteValue($_GET['id']);
+        $rows = \Db\select("SELECT $fields FROM `vktask1`.`{$role}s` WHERE `id` = $id");
+        if (empty($rows)) {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+            return array(
+                'message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                'errors' => array(
+                    'id' => \Dictionary\translate('Invalid value')
+                )
+            );
+        } else {
+            return $rows[0];
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
@@ -142,6 +206,7 @@ function _updateUser($role) {
         $user = \Db\updateById($dataToUpdate, $table, $_POST['id']);
         if (!empty($user)) {
             $user = array_intersect_key($user, array('id' => '', 'email' => '', 'is_active' => ''));
+            $user['_message'] = \Dictionary\translate(ucfirst($role) . '\'s account updated successfully');
             return $user;
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);

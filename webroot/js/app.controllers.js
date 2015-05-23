@@ -3,7 +3,7 @@ var AppController = {
     dataGridTableContainer: null,
     dataGridPaginationContainer: null,
     dataGridPaginationInfo: {},
-    dataGridTemplate: null
+    dataGridTemplate: null,
 };
 
 AppController.loginForm = function (element, isFromCache) {
@@ -13,9 +13,9 @@ AppController.loginForm = function (element, isFromCache) {
     var form = App.container.find('form');
     form[0].reset();
     form.on('submit', function (event) {
-        App.removeFormValidationErrors(form, true);
+        AppComponents.removeFormValidationErrors(form, true);
         form.addClass('loading');
-        var data = App.collectFormData(form);
+        var data = AppComponents.collectFormData(form);
         $.ajax({
             url: App.getApiUrl('login'),
             method: 'POST',
@@ -26,7 +26,7 @@ AppController.loginForm = function (element, isFromCache) {
             App.setRoute(json.route);
         }).fail(function (xhr) {
             if (App.isNotAuthorisationFailure(xhr)) {
-                App.applyFormValidationErrors(form, xhr);
+                AppComponents.applyFormValidationErrors(form, xhr);
             }
         }).always(function () {
             setTimeout(function () {
@@ -46,7 +46,7 @@ AppController.logout = function () {
         App.setRoute('login');
     }).fail(function (xhr) {
         if (App.isNotAuthorisationFailure(xhr)) {
-            App.applyFormValidationErrors(form, xhr);
+            AppComponents.setErrorMessageFromXhr(xhr);
         }
     }).always(function () {
         App.isLoading(false);
@@ -127,15 +127,17 @@ AppController.adminDataGridApplyEventHandlers = function (role) {
     AppController.dataGridTableContainer.on('click', 'td.actions a', function () {
         var $el = $(this);
         var route = $el.attr('data-route');
-        var params = $el.attr('data-params') || '';
-        var method = $el.attr('data-method') || 'GET';
+        var queryArgs = $el.attr('data-args') || '';
         if ($el.attr('data-route')) {
-
+            var urlArgs = Utils.parseUrlQuery(queryArgs);
+            urlArgs.back_url = App.getRouteUrl();
+            App.setRoute($el.attr('data-route'), urlArgs);
         } else if ($el.attr('data-api-action')) {
+            var method = $el.attr('data-method') || 'GET';
             AppController.dataGridTableContainer.addClass('loading');
             $.ajax({
                 url: App.getApiUrl($el.attr('data-api-action')),
-                data: params,
+                data: queryArgs,
                 method: method,
                 dataType: 'json',
                 cache: false
@@ -187,4 +189,48 @@ AppController.adminLoadUsers = function (role, returnDeferred, justReloadData) {
 AppController.adminDataGridChangeUrl = function () {
     App.currentUrlArgs.page = AppController.dataGridPaginationInfo.page;
     App._changeBrowserUrl();
+};
+
+AppController.adminUserForm = function (template, role, editMode, isFromCache) {
+    AppComponents.displayNavigationMenu('admin');
+    var backUrl = App.currentUrlArgs.back_url || null;
+    var backUrlArgs;
+    if (backUrl) {
+        backUrlArgs = Utils.parseUrlQuery(App.currentUrlArgs.back_url);
+        if (!backUrlArgs.route) {
+            backUrl = null;
+        }
+    }
+    if (!backUrl) {
+        backUrlArgs = {route: 'admin-' + role + 's-list'};
+        backUrl = App.getRouteUrl(backUrlArgs.route);
+    }
+
+    if (editMode) {
+        if (!App.currentUrlArgs.id) {
+            App.setRoute(backUrlArgs.route, backUrlArgs);
+            AppComponents.setMessage('Item ID not found in URL arguments');
+            return;
+        }
+        App.isLoading(true);
+        $.ajax({
+            url: App.getApiUrl('get-' + role) + App.currentUrlArgs.id,
+            method: 'GET',
+            dataType: 'json'
+        }).done(function (item) {
+            App.container.html(template({editMode: editMode, item: item, backUrl: backUrl}));
+            AppComponents.initForm();
+        }).fail(function (xhr) {
+            if (App.isNotAuthorisationFailure(xhr)) {
+                App.setRoute(backUrlArgs.route, backUrlArgs);
+                AppComponents.setErrorMessageFromXhr(xhr);
+            }
+        }).always(function () {
+            App.isLoading(false);
+        })
+    } else {
+        App.container.html(template({editMode: editMode, item: {}, backUrl: backUrl}));
+        AppComponents.initForm();
+        App.isLoading(false);
+    }
 };

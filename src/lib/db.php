@@ -24,7 +24,7 @@ function addDbConnectionConfig($config, $name = 'default') {
         'name' => '',
         'user' => '',
         'password' => '',
-        'encoding' => 'UTF-8',
+        'encoding' => 'UTF8',
         'connection' => null
     );
     $GLOBALS['__DB_CONNECTIONS'][$name] = array_replace($defaultConfig, $config);
@@ -60,6 +60,7 @@ function getConnection($name = 'default') {
         if ($GLOBALS['__DB_CONNECTIONS'][$name]['connection'] === false) {
             throw new \Exception(mysqli_connect_error());
         }
+        query('SET NAMES ' . $GLOBALS['__DB_CONNECTIONS'][$name]['encoding'], $name);
     }
 
     return $GLOBALS['__DB_CONNECTIONS'][$name]['connection'];
@@ -182,7 +183,7 @@ function insert(array $data, $table, $connectionName = 'default') {
     $result = query($query, $connectionName);
     if (!empty($result)) {
         $id = quoteValue(mysqli_insert_id(getConnection($connectionName)), $connectionName);
-        $rows = select("SELECT * from `$table` WHERE `id` = $id", $connectionName);
+        $rows = select("SELECT * FROM `$table` WHERE `id` = $id", $connectionName);
         if (!empty($rows[0])) {
             return $rows[0];
         }
@@ -220,7 +221,7 @@ function updateById(array $data, $table, $id, $connectionName = 'default') {
     $query = "UPDATE `$table` SET {$values} WHERE `id` = $id";
     $result = query($query, $connectionName);
     if (!empty($result)) {
-        $rows = select("SELECT * from `$table` WHERE `id` = $id", $connectionName);
+        $rows = select("SELECT * FROM `$table` WHERE `id` = $id", $connectionName);
         if (!empty($rows[0])) {
             return $rows[0];
         }

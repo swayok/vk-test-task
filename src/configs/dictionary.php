@@ -31,6 +31,7 @@ $__TRANSLATIONS = array(
     'Clients' => 'Клиенты',
     'Executors' => 'Исполнители',
     'Admins' => 'Администраторы',
+    'Page' => 'Страница',
     'Rows' => 'Строки',
     'From' => 'из',
     'Newer' => 'Новее',
@@ -47,6 +48,24 @@ $__TRANSLATIONS = array(
     'Add admin' => 'Добавить администратора',
     'Add client' => 'Добавить клиента',
     'Add executor' => 'Добавить исполнителя',
+    'Invalid request data' => 'Получены некорректные данные',
+    'Admin account editing' => 'Редактирование учетной записи администратора',
+    'Admin account creation' => 'Создание учетной записи администратора',
+    'Client account editing' => 'Редактирование учетной записи клиента',
+    'Client account creation' => 'Создание учетной записи клиента',
+    'Executor account editing' => 'Редактирование учетной записи исполнителя',
+    'Executor account creation' => 'Создание учетной записи исполнителя',
+    'Authorisation is allowed' => 'Авторизация разрешена',
+    'Save updates' => 'Сохранить изменения',
+    'Create account' => 'Создать учетную запись',
+    'Admin\'s account updated successfully' => 'Учетная запись администратора успешно обновлена',
+    'Client\'s account updated successfully' => 'Учетная запись клиента успешно обновлена',
+    'Executor\'s account updated successfully' => 'Учетная запись исполнителя успешно обновлена',
+    'Admin\'s account created successfully' => 'Учетная запись администратора успешно создана',
+    'Client\'s account created successfully' => 'Учетная запись клиента успешно создана',
+    'Executor\'s account created successfully' => 'Учетная запись исполнителя успешно создана',
+    'Cancel' => 'Отмена',
+    'Account with entered e-mail address already exists' => 'Учетная запись с таким e-mail адресом уже существует'
 );
 
 function translate($string) {

@@ -1,11 +1,11 @@
 <div class="row data-grid-header">
     <div class="col-md-9">
-        <h1><?php echo \Dictionary\translate('Clients'); ?></h1>
+        <h1><?php echo \Dictionary\translate('Executors'); ?></h1>
     </div>
     <div class="col-md-3 actions">
-        <a href="?route=client/client-add" class="create-link btn btn-primary btn-sm">
+        <a href="/?route=admin-executor-add" data-add-back-url="1" class="create-link btn btn-primary btn-sm">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-            <?php echo \Dictionary\translate('Add client'); ?>
+            <?php echo \Dictionary\translate('Add executor'); ?>
         </a>
     </div>
 </div>
@@ -15,6 +15,7 @@
         <tr>
             <th><?php echo \Dictionary\translate('ID'); ?></th>
             <th><?php echo \Dictionary\translate('E-mail'); ?></th>
+            <th><?php echo \Dictionary\translate('Balance'); ?></th>
             <th><?php echo \Dictionary\translate('Status'); ?></th>
             <th>
                 <?php echo \Dictionary\translate('Created at'); ?>
@@ -29,6 +30,7 @@
         <tr>
             <td>{{=item.id}}</td>
             <td>{{=item.email}}</td>
+            <td>{{=item.balance}} руб.</td>
             {{?item.is_active == 1}}
                 <td class="success"><?php echo \Dictionary\translate('Active'); ?>{{?}}</td>
             {{?item.is_active == 0}}
@@ -37,20 +39,22 @@
             <td>{{=item.created_at}}</td>
             <td>{{=item.creator_email || ''}}</td>
             <td class="actions">
-                <a data-route="client/client-edit" data-params="id={{=item.id}}"
+                <a data-route="admin-executor-edit" data-args="id={{=item.id}}"
                    class="edit-link btn btn-primary btn-sm" href="javascript:void(0)">
                     <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                     <?php echo \Dictionary\translate('Edit'); ?>
                 </a>
                 {{? item.is_active == 1 }}
-                    <a data-api-action="update-client" data-params="id={{=item.id}}&is_active=0" data-method="post"
+                    <a data-api-action="update-executor" data-args="id={{=item.id}}&is_active=0" data-method="post"
                        class="deactivate-link btn btn-danger btn-sm" href="javascript:void(0)">
+                        <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
                         <?php echo \Dictionary\translate('Deactivate'); ?>
                     </a>
                 {{?}}
                 {{? item.is_active == 0 }}
-                    <a data-api-action="update-client" data-params="id={{=item.id}}&is_active=1" data-method="post"
+                    <a data-api-action="update-executor" data-args="id={{=item.id}}&is_active=1" data-method="post"
                        class="activate-link btn btn-success btn-sm" href="javascript:void(0)">
+                        <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
                         <?php echo \Dictionary\translate('Activate'); ?>
                     </a>
                 {{?}}

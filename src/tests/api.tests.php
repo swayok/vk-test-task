@@ -78,19 +78,19 @@ function loginStatus() {
         'id' => '1',
         'email' => 'admin@test.ru',
         'role' => 'admin',
-        'route' => 'admin-dashboard'
+        '_route' => 'admin-dashboard'
     );
     $client = array(
         'id' => '1',
         'email' => 'client@test.ru',
         'role' => 'client',
-        'route' => 'add-task'
+        '_route' => 'add-task'
     );
     $executor = array(
         'id' => '1',
         'email' => 'executor@test.ru',
         'role' => 'executor',
-        'route' => 'tasks-list',
+        '_route' => 'tasks-list',
         'balance' => 111.11
     );
 
@@ -180,6 +180,7 @@ function loginStatus() {
 }
 
 function createUsersAndLogin() {
+    // todo: add duplicate email test for add user actions
     \TestTools\cleanTestResults();
     unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
@@ -318,7 +319,7 @@ function createUsersAndLogin() {
     $_POST['role'] = 'client';
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'route', 'role'))
+        \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['id'], $clientId)
     );
@@ -436,7 +437,7 @@ function createUsersAndLogin() {
     $_POST['role'] = 'executor';
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'route', 'role'))
+        \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['id'], $executorId)
     );
@@ -502,7 +503,7 @@ function createUsersAndLogin() {
     $_POST['role'] = 'admin';
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'route', 'role'))
+        \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
     );
     \TestTools\addTestResult('admin login', $success, $response);

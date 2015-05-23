@@ -14,6 +14,15 @@ form .error-text {
     border-radius: 0 0 4px 4px;
 }
 
+form .checkbox .error-text {
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+
+    margin-top: 0;
+    padding-top: 2px;
+}
+
 #login-form {
     width: 300px;
     margin: 100px auto 0 auto;
@@ -80,4 +89,13 @@ form .error-text {
 
 .data-grid-header > div.actions {
     text-align: right;
+}
+
+form.user-form h1 {
+    text-align: center;
+}
+
+form.user-form .inputs {
+    width: 400px;
+    margin: 30px auto 0 auto;
 }

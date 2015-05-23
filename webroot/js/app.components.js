@@ -22,13 +22,20 @@ AppComponents.init = function () {
 
 AppComponents.setMessage = function (message, type) {
     $.when(AppComponents.hideMessage()).done(function () {
+        if ($.isPlainObject(message)) {
+            type = message.type || type;
+            message = message.message;
+        }
+        if (!message) {
+            return;
+        }
         message = $('<div class="container">').append(message);
         AppComponents.messagesContainer.html('').append(message);
         if (!type) {
             type = 'info';
         } else {
             type = type.toLowerCase();
-            if (!$.inArray(type, ['success', 'info', 'warning', 'danger'])) {
+            if ($.inArray(type, ['success', 'info', 'warning', 'danger']) < 0) {
                 type = 'info';
             }
         }
@@ -117,4 +124,101 @@ AppComponents.getPaginationTemplate = function (data) {
     } else {
         return data ? AppComponents.pagination.template(data) : AppComponents.pagination.template;
     }
+};
+
+AppComponents.initForm = function (onSuccessCallback) {
+    var form = App.container.find('form[data-api-action]');
+    form.on('submit', function (event) {
+        AppComponents.removeFormValidationErrors(form, true);
+        form.addClass('loading');
+        var data = AppComponents.collectFormData(form);
+        $.ajax({
+            url: App.getApiUrl(form.attr('data-api-action')),
+            method: 'POST',
+            data: data,
+            dataType: 'json'
+        }).done(function (json) {
+            var proceed = true;
+            if (typeof onSuccessCallback === 'function') {
+                proceed = onSuccessCallback(json, form)
+            }
+            if (proceed) {
+                if (json._message) {
+                    App.setMessageAfterRouteChange(json._message, 'success');
+                }
+                if (form.attr('data-after-save-go-to')) {
+                    var urlArgs = Utils.parseUrlQuery(form.attr('data-after-save-go-to'));
+                    if (urlArgs.route) {
+                        App.setRoute(urlArgs.route, urlArgs);
+                        return;
+                    }
+                }
+                if (json._route) {
+                    App.setRoute(json._route);
+                }
+            }
+        }).fail(function (xhr) {
+            if (App.isNotAuthorisationFailure(xhr)) {
+                AppComponents.applyFormValidationErrors(form, xhr);
+            }
+        }).always(function () {
+            setTimeout(function () {
+                form.removeClass('loading');
+            }, 200);
+        });
+        return false;
+    });
+};
+
+
+AppComponents.collectFormData = function (form) {
+    var dataObject = {};
+    var dataArray = form.serializeArray();
+    $.each(dataArray, function() {
+        if (dataObject[this.name] !== undefined && this.name.match(/\[.*?\]$/)) {
+            if (!dataObject[this.name].push) {
+                dataObject[this.name] = [dataObject[this.name]];
+            }
+            dataObject[this.name].push(this.value || '');
+        } else {
+            dataObject[this.name] = this.value || '';
+        }
+    });
+    return dataObject;
+};
+
+AppComponents.removeFormValidationErrors = function (form, hideMessage) {
+    if (!!hideMessage) {
+        AppComponents.hideMessage();
+    }
+    form.find('.has-error').removeClass('has-error');
+    return form.find('.error-text').slideUp(App.animationsDurationMs, function () {
+        $(this).html('');
+    });
+};
+
+AppComponents.applyFormValidationErrors = function (form, xhr) {
+    $.when(AppComponents.removeFormValidationErrors(form, true)).done(function () {
+        try {
+            var response = JSON.parse(xhr.responseText);
+            if (response.message) {
+                AppComponents.setMessage(response.message, 'danger');
+            }
+            if (response.errors && $.isPlainObject(response.errors)) {
+                for (var inputName in response.errors) {
+                    if (form[0][inputName]) {
+                        var container = $(form[0][inputName]).closest('.form-group, .checkbox').addClass('has-error');
+                        var errorEl = container.find('.error-text');
+                        if (errorEl.length == 0) {
+                            errorEl = $('<div class="error-text bg-danger"></div>').hide();
+                            container.append(errorEl);
+                        }
+                        errorEl.html(response.errors[inputName]).slideDown(App.animationsDurationMs);
+                    }
+                }
+            }
+        } catch (exc) {
+            AppComponents.setErrorMessageFromXhr(xhr, true);
+        }
+    });
 };

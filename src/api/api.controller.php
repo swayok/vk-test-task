@@ -26,18 +26,21 @@ function runAction($action) {
                     'admins-list' => '\Api\AdminActions\adminsList',
                     'admins-list-info' => '\Api\AdminActions\adminsListInfo',
                     'admin' => '\Api\AdminActions\getAdmin',
+                    'get-admin' => '\Api\AdminActions\getAdmin',
                     'add-admin' => '\Api\AdminActions\addAdmin',
                     'update-admin' => '\Api\AdminActions\updateAdmin',
 
                     'clients-list' => '\Api\AdminActions\clientsList',
                     'clients-list-info' => '\Api\AdminActions\clientsListInfo',
                     'client' => '\Api\AdminActions\getClient',
+                    'get-client' => '\Api\AdminActions\getClient',
                     'add-client' => '\Api\AdminActions\addClient',
                     'update-client' => '\Api\AdminActions\updateClient',
 
                     'executors-list' => '\Api\AdminActions\executorsList',
                     'executors-list-info' => '\Api\AdminActions\executorsListInfo',
                     'executor' => '\Api\AdminActions\getExecutor',
+                    'get-executor' => '\Api\AdminActions\getExecutor',
                     'add-executor' => '\Api\AdminActions\addExecutor',
                     'update-executor' => '\Api\AdminActions\updateExecutor',
                 );
