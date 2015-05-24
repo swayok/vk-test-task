@@ -148,15 +148,20 @@ function assertHasNoKeys($receivedArray, $testKeys) {
 function assertValidationErrors($receivedData, $invalidFields = array()) {
     $GLOBALS['__LAST_TEST_DETAILS'] = array();
     $success = (
-        assertErrorCode(401)
+        assertErrorCode(\Utils\HTTP_CODE_INVALID)
         && assertHasKeys($receivedData, array('errors'), false)
-        && assertHasKeys($receivedData['errors'], array_keys($invalidFields))
+        && (
+            assertHasKeys($receivedData['errors'], $invalidFields)
+            || assertHasKeys($receivedData['errors'],array_keys($invalidFields))
+        )
     );
     if ($success) {
         foreach ($invalidFields as $fieldName => $expectedError) {
-            $success = assertEquals($receivedData['errors'][$fieldName], $expectedError);
-            if (!$success) {
-                break;
+            if (!is_int($fieldName)) {
+                $success = assertEquals($receivedData['errors'][$fieldName], $expectedError);
+                if (!$success) {
+                    break;
+                }
             }
         }
     }

@@ -18,9 +18,12 @@ try {
     $response = \Api\Controller\runAction($action);
 } catch (Exception $exc) {
     \Utils\setHttpCode($exc->getCode() >= 400 ? $exc->getCode() : 500);
-    $response = json_decode($exc->getMessage(), true);
-    if ($response === false) {
-        $response = array('message' => $exc->getMessage());
+    $message = $exc->getMessage();
+    if ($message[0] == '{') {
+        $response = json_decode($message, true);
+    }
+    if (empty($response)) {
+        $response = array('_message' => $exc->getMessage());
     }
 }
 

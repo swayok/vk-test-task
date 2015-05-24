@@ -35,7 +35,18 @@ AppConfigs.configureApp = function () {
         'admins-list-info': 'admins-list-info',
         'get-admin': 'get-admin&id=',
         'add-admin': 'add-admin',
-        'update-admin': 'update-admin'
+        'update-admin': 'update-admin',
+
+        'add-task': 'add-task',
+        'edit-task': 'edit-task',
+        'client-tasks-list': 'client-tasks-list',
+        'client-tasks-list-info': 'client-tasks-list-info',
+
+        'pending-tasks-list': 'pending-tasks-list',
+        'pending-tasks-list-info': 'pending-tasks-list-info',
+        'executed-tasks-list': 'executed-tasks-list',
+        'executed-tasks-list-info': 'executed-tasks-list-info',
+        'execute-task': 'execute-task'
     };
 
     App.routes = {
@@ -161,7 +172,49 @@ AppConfigs.configureApp = function () {
             },
             cache: true,
             canBeReloaded: true
+        },
+
+        'client-tasks-list': {
+            section: 'admin',
+            url: App.viewsUrl + 'client.tasks.list',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.clientTasksDataGrid(template, isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+        /*'client-task-add': {
+            section: 'client',
+            url: App.viewsUrl + 'client.task.form',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.clientTaskForm(template, false, isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },*/
+        /*'client-task-edit': {
+            section: 'client',
+            url: App.viewsUrl + 'client.task.form',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.clientTaskForm(template, true, isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },*/
+        'client-profile': {
+            section: 'client',
+            url: App.viewsUrl + 'client.profile.form',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.profileForm(template, 'client', isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
         }
+
     };
 
 

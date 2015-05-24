@@ -10,7 +10,7 @@ function loginStatus() {
     if (empty($user)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_UNAUTHORIZED);
         return array(
-            'message' => \Dictionary\translate('Authorisation required')
+            '_message' => \Dictionary\translate('Authorisation required')
         );
     } else {
         return $user;
@@ -21,22 +21,26 @@ function loginStatus() {
  * @return bool|array
  */
 function _getAuthorisedUser() {
-    if (!empty($_SESSION['client']) && !empty($_SESSION['client']['id'])) {
-        return $_SESSION['client'];
-    } else if (!empty($_SESSION['executor']) && !empty($_SESSION['executor']['id'])) {
-        return $_SESSION['executor'];
-    } else if (!empty($_SESSION['admin']) && !empty($_SESSION['admin']['id'])) {
-        return $_SESSION['admin'];
+    if (!empty($_SESSION['user']) && !empty($_SESSION['user']['id'])) {
+        return $_SESSION['user'];
     } else {
         return false;
     }
+}
+
+function _setAuthorisedUser($userData) {
+    $_SESSION['user'] = $userData;
+}
+
+function _unsetAuthorisation() {
+    unset($_SESSION['user']);
 }
 
 function _isAuthorisedAs($role) {
     if (!in_array($role, array('admin', 'executor', 'client'))) {
         throw new \Exception("Unknown role [{$role}]");
     }
-    return !empty($_SESSION[$role]) && !empty($_SESSION[$role]['id']);
+    return !empty($_SESSION['user']) && !empty($_SESSION['user']['id']) && $_SESSION['user']['role'] === $role;
 }
 
 function login() {
@@ -69,10 +73,10 @@ function login() {
     ));
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Form contains invalid data'));
     }
 
-    unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
+    _unsetAuthorisation();
     $userRole = strtolower($_POST['role']);
     $table = $userRole . 's';
     $user = \Db\smartSelect(
@@ -91,19 +95,19 @@ function login() {
                 $user['_route'] = 'admin-dashboard';
                 break;
             case 'client':
-                $user['_route'] = 'add-task';
+                $user['_route'] = 'client-tasks-list';
                 break;
             case 'executor':
-                $user['_route'] = 'tasks-list';
+                $user['_route'] = 'executor-tasks-list';
                 break;
         }
         $user['role'] = $userRole;
-        $_SESSION[$userRole] = $user;
+        _setAuthorisedUser($user);
         return $user;
     } else {
         \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
         return array(
-            'message' => \Dictionary\translate('Authorisation error: user not found'),
+            '_message' => \Dictionary\translate('Authorisation error: user not found'),
             'errors' => array(
                 'email' => \Dictionary\translate('Value not found'),
                 'password' => \Dictionary\translate('Value not found')
@@ -113,8 +117,8 @@ function login() {
 }
 
 function logout() {
-    unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
-    return array('route' => 'login');
+    _unsetAuthorisation();
+    return array('_route' => 'login');
 }
 
 function updateProfile() {
@@ -149,7 +153,7 @@ function updateProfile() {
     ));
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('errors' => $errors, 'message' => \Dictionary\translate('Form data does not match authorised user data'));
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Form data does not match authorised user data'));
     }
     $allowedFields = array('password');
     $dataToUpdate = array_intersect_key($_POST, array_flip($allowedFields));
@@ -167,7 +171,7 @@ function updateProfile() {
         if (!\Db\idExists($_POST['id'], $table)) {
             \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
             return array(
-                'message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
                 'errors' => array(
                     'id' => \Dictionary\translate('Invalid value')
                 )
@@ -179,15 +183,15 @@ function updateProfile() {
                 $currentUser,
                 array_intersect_key($user, array('id' => '', 'email' => ''))
             );
-            $_SESSION[$currentUser['role']] = $user;
+            _setAuthorisedUser($user);
             $user['_message'] = \Dictionary\translate('Your account updated successfully');
             return $user;
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-            return array('message' => \Dictionary\translate('Failed to save data to DB'));
+            return array('_message' => \Dictionary\translate('Failed to save data to DB'));
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-        return array('message' => $exc->getMessage());
+        return array('_message' => $exc->getMessage());
     }
 }

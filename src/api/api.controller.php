@@ -50,7 +50,9 @@ function runAction($action) {
                 require_once 'api.client.actions.php';
                 $allowedActions += array(
                     'add-task' => '\Api\ClientActions\addTask',
-                    'my-task' => '\Api\ClientActions\myTasks',
+                    'edit-task' => '\Api\ClientActions\editTask',
+                    'client-tasks-list' => '\Api\ClientActions\tasksList',
+                    'client-tasks-list-info' => '\Api\ClientActions\tasksListInfo',
                 );
                 break;
             case 'executor':
@@ -77,6 +79,6 @@ function runAction($action) {
 function terminateUnauthorisedRequest() {
     Utils\terminate(
         Utils\HTTP_CODE_UNAUTHORIZED,
-        array('message' => \Dictionary\translate('Access denied'), 'route' => 'login')
+        array('_message' => \Dictionary\translate('Access denied'), '_route' => 'login')
     );
 }

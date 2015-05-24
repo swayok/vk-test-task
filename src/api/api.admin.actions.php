@@ -48,22 +48,23 @@ function _addUser($role) {
     ));
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Form contains invalid data'));
     }
     $table = "`vktask1`.`{$role}s`";
     if (\Db\selectValue("SELECT `id` FROM {$table} WHERE `email` = :email", array('email' => $_POST['email'])) > 0) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
         return array(
             'errors' => array('email' => \Dictionary\translate('Account with entered e-mail address already exists')),
-            'message' => \Dictionary\translate('Form contains invalid data')
+            '_message' => \Dictionary\translate('Form contains invalid data')
         );
     }
 
+    $admin = \Api\CommonActions\_getAuthorisedUser();
     $user = array(
         'email' => strtolower($_POST['email']),
         'password' => \Utils\hashPassword($_POST['password']),
         'is_active' => $_POST['is_active'],
-        'created_by' => $_SESSION['admin']['id'],
+        'created_by' => $admin['id'],
     );
 
     try {
@@ -74,11 +75,11 @@ function _addUser($role) {
             return $user;
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-            return array('message' => \Dictionary\translate('Failed to save data to DB'));
+            return array('_message' => \Dictionary\translate('Failed to save data to DB'));
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-        return array('message' => $exc->getMessage());
+        return array('_message' => $exc->getMessage());
     }
 }
 
@@ -114,7 +115,7 @@ function _getUser($role, $fields) {
     ));
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('errors' => $errors, 'message' => \Dictionary\translate('Invalid request data'));
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Invalid request data'));
     }
     try {
         $fields = '`' . implode('`,`', $fields) . '`';
@@ -123,7 +124,7 @@ function _getUser($role, $fields) {
         if (empty($rows)) {
             \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
             return array(
-                'message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
                 'errors' => array(
                     'id' => \Dictionary\translate('Invalid value')
                 )
@@ -133,7 +134,7 @@ function _getUser($role, $fields) {
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-        return array('message' => $exc->getMessage());
+        return array('_message' => $exc->getMessage());
     }
 }
 
@@ -178,7 +179,7 @@ function _updateUser($role) {
     ));
     if (!empty($errors)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('errors' => $errors, 'message' => \Dictionary\translate('Form contains invalid data'));
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Form contains invalid data'));
     }
     $allowedFields = array('password', 'is_active');
     $dataToUpdate = array_intersect_key($_POST, array_flip($allowedFields));
@@ -189,7 +190,7 @@ function _updateUser($role) {
     }
     if (empty($dataToUpdate)) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
-        return array('message' => \Dictionary\translate('No data passed'));
+        return array('_message' => \Dictionary\translate('No data passed'));
     }
 
     try {
@@ -197,7 +198,7 @@ function _updateUser($role) {
         if (!\Db\idExists($_POST['id'], $table)) {
             \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
             return array(
-                'message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
                 'errors' => array(
                     'id' => \Dictionary\translate('Invalid value')
                 )
@@ -210,11 +211,11 @@ function _updateUser($role) {
             return $user;
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-            return array('message' => \Dictionary\translate('Failed to save data to DB'));
+            return array('_message' => \Dictionary\translate('Failed to save data to DB'));
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
-        return array('message' => $exc->getMessage());
+        return array('_message' => $exc->getMessage());
     }
 
 }

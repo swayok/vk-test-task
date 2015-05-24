@@ -9,7 +9,7 @@ require_once __DIR__ . '/../api/api.admin.actions.php';
 
 function getTestsList() {
     return array(
-//        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
+        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
         'Creating users and Login' => __NAMESPACE__ . '\createUsersAndLogin'
     );
 }
@@ -19,58 +19,25 @@ function loginStatus() {
 
     // noone logged in
 
-    unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
+    \Api\CommonActions\_unsetAuthorisation();
     $response = \Api\CommonActions\loginStatus();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_UNAUTHORIZED)
-        && \TestTools\assertHasKeys($response, array('message'))
+        && \TestTools\assertHasKeys($response, array('_message'))
     );
     \TestTools\addTestResult('no users logged in', $success, $response);
 
-    $_SESSION['client'] = array();
+    \Api\CommonActions\_setAuthorisedUser(array());
     $response = \Api\CommonActions\loginStatus();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_UNAUTHORIZED)
-        && \TestTools\assertHasKeys($response, array('message'))
+        && \TestTools\assertHasKeys($response, array('_message'))
     );
-    \TestTools\addTestResult('no users logged in / empty client data', $success, $response);
+    \TestTools\addTestResult('no users logged in / empty user data', $success, $response);
 
-    $response = \Api\CommonActions\_isAuthorisedAs('client');
-    $success = (
-        \TestTools\assertEquals($response, false)
-    );
-    \TestTools\addTestResult('is authorised as client: false', $success, $response);
-    unset($_SESSION['client']);
+    _testIsAuthorisedAs(false, false, false);
 
-    $_SESSION['executor'] = array();
-    $response = \Api\CommonActions\loginStatus();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_UNAUTHORIZED)
-        && \TestTools\assertHasKeys($response, array('message'))
-    );
-    \TestTools\addTestResult('no users logged in / empty executor data', $success, $response);
-
-    $response = \Api\CommonActions\_isAuthorisedAs('executor');
-    $success = (
-        \TestTools\assertEquals($response, false)
-    );
-    \TestTools\addTestResult('is authorised as executor: false', $success, $response);
-    unset($_SESSION['executor']);
-
-    $_SESSION['admin'] = array();
-    $response = \Api\CommonActions\loginStatus();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_UNAUTHORIZED)
-        && \TestTools\assertHasKeys($response, array('message'))
-    );
-    \TestTools\addTestResult('no users logged in / empty admin data', $success, $response);
-    unset($_SESSION['admin']);
-
-    $response = \Api\CommonActions\_isAuthorisedAs('admin');
-    $success = (
-        \TestTools\assertEquals($response, false)
-    );
-    \TestTools\addTestResult('is authorised as admin: false', $success, $response);
+    \Api\CommonActions\_unsetAuthorisation();
 
     // someone logged in
 
@@ -84,26 +51,28 @@ function loginStatus() {
         'id' => '1',
         'email' => 'client@test.ru',
         'role' => 'client',
-        '_route' => 'add-task'
+        '_route' => 'client-tasks-list'
     );
     $executor = array(
         'id' => '1',
         'email' => 'executor@test.ru',
         'role' => 'executor',
-        '_route' => 'tasks-list',
+        '_route' => 'executor-tasks-list',
         'balance' => 111.11
     );
 
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
+    _testIsAuthorisedAs(false, false, true);
     $response = \Api\CommonActions\loginStatus();
     $success = (
         \TestTools\assertHasKeys($response, array_keys($admin))
         && \TestTools\assertEquals($response['email'], $admin['email'])
         && \TestTools\assertEquals($response['role'], $admin['role'])
     );
-    \TestTools\addTestResult('only admin logged in', $success, $response);
+    \TestTools\addTestResult('admin logged in', $success, $response);
 
-    $_SESSION['executor'] = $executor;
+    \Api\CommonActions\_setAuthorisedUser($executor);
+    _testIsAuthorisedAs(false, true, false);
     $response = \Api\CommonActions\loginStatus();
     $success = (
         \TestTools\assertHasKeys($response, array_keys($executor))
@@ -111,63 +80,17 @@ function loginStatus() {
         && \TestTools\assertEquals($response['role'], $executor['role'])
         && \TestTools\assertEquals($response['balance'], $executor['balance'])
     );
-    \TestTools\addTestResult('admin and executor logged in', $success, $response);
+    \TestTools\addTestResult('executor logged in', $success, $response);
 
-    $_SESSION['client'] = $client;
+    \Api\CommonActions\_setAuthorisedUser($client);
+    _testIsAuthorisedAs(true, false, false);
     $response = \Api\CommonActions\loginStatus();
     $success = (
         \TestTools\assertHasKeys($response, array_keys($client))
         && \TestTools\assertEquals($response['email'], $client['email'])
         && \TestTools\assertEquals($response['role'], $client['role'])
     );
-    \TestTools\addTestResult('admin, executor and client logged in', $success, $response);
-
-    $response = \Api\CommonActions\_isAuthorisedAs('client');
-    $success = (
-        \TestTools\assertEquals($response, true)
-    );
-    \TestTools\addTestResult('is authorised as client: true', $success, $response);
-
-    $response = \Api\CommonActions\_isAuthorisedAs('executor');
-    $success = (
-        \TestTools\assertEquals($response, true)
-    );
-    \TestTools\addTestResult('is authorised as executor: true', $success, $response);
-
-    $response = \Api\CommonActions\_isAuthorisedAs('admin');
-    $success = (
-        \TestTools\assertEquals($response, true)
-    );
-    \TestTools\addTestResult('is authorised as admin: true', $success, $response);
-
-    unset($_SESSION['executor']);
-    $response = \Api\CommonActions\loginStatus();
-    $success = (
-        \TestTools\assertHasKeys($response, array_keys($client))
-        && \TestTools\assertEquals($response['email'], $client['email'])
-        && \TestTools\assertEquals($response['role'], $client['role'])
-    );
-    \TestTools\addTestResult('admin and client logged in', $success, $response);
-
-    unset($_SESSION['admin']);
-    $response = \Api\CommonActions\loginStatus();
-    $success = (
-        \TestTools\assertHasKeys($response, array_keys($client))
-        && \TestTools\assertEquals($response['email'], $client['email'])
-        && \TestTools\assertEquals($response['role'], $client['role'])
-    );
-    \TestTools\addTestResult('only client logged in', $success, $response);
-
-    unset($_SESSION['client']);
-    $_SESSION['executor'] = $executor;
-    $response = \Api\CommonActions\loginStatus();
-    $success = (
-        \TestTools\assertHasKeys($response, array_keys($executor))
-        && \TestTools\assertEquals($response['email'], $executor['email'])
-        && \TestTools\assertEquals($response['role'], $executor['role'])
-        && \TestTools\assertEquals($response['balance'], $executor['balance'])
-    );
-    \TestTools\addTestResult('only executor logged in', $success, $response);
+    \TestTools\addTestResult('client logged in', $success, $response);
 
     try {
         $response = \Api\CommonActions\_isAuthorisedAs('qq');
@@ -179,10 +102,30 @@ function loginStatus() {
     return \TestTools\getTestResults(true);
 }
 
+function _testIsAuthorisedAs($client = false, $executor = false, $admin = false) {
+    $code = intval($client) . intval($executor) . intval($admin);
+    $response = \Api\CommonActions\_isAuthorisedAs('client');
+    $success = (
+        \TestTools\assertEquals($response, $client)
+    );
+    \TestTools\addTestResult($code . ' / is authorised as client: ' . ($client ? 'true' : 'false'), $success, $response);
+
+    $response = \Api\CommonActions\_isAuthorisedAs('executor');
+    $success = (
+        \TestTools\assertEquals($response, $executor)
+    );
+    \TestTools\addTestResult($code . ' / is authorised as executor: ' . ($executor ? 'true' : 'false'), $success, $response);
+
+    $response = \Api\CommonActions\_isAuthorisedAs('admin');
+    $success = (
+        \TestTools\assertEquals($response, $admin)
+    );
+    \TestTools\addTestResult($code . ' / is authorised as admin: ' . ($admin ? 'true' : 'false'), $success, $response);
+}
+
 function createUsersAndLogin() {
-    // todo: add duplicate email test for add user actions
     \TestTools\cleanTestResults();
-    unset($_SESSION['admin'], $_SESSION['client'], $_SESSION['executor']);
+    \Api\CommonActions\_unsetAuthorisation();
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
     $GLOBALS['__REQUEST_INFO']['isGet'] = false;
 
@@ -192,7 +135,7 @@ function createUsersAndLogin() {
     } catch (\Exception $exc) {
         $success = (
             \TestTools\assertEquals($exc->getCode(), 401)
-            && \TestTools\assertHasKeys(json_decode($exc->getMessage(), true), array('message', 'route'))
+            && \TestTools\assertHasKeys(json_decode($exc->getMessage(), true), array('_message', '_route'))
         );
         \TestTools\addTestResult('admin not logged in: exception', $success, array(
             'message' => $exc->getMessage(),
@@ -209,7 +152,7 @@ function createUsersAndLogin() {
     }
     $admin = $admin[0];
     $admin['role'] = 'admin';
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
     $validUser = array(
         'email' => 'testuser' . time() . '@test.com',
         'password' => 'l9DFhc1cXHSot4OkxZj1',
@@ -219,17 +162,15 @@ function createUsersAndLogin() {
     $_POST = array();
     $response = \Api\AdminActions\addAdmin();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
+        \TestTools\assertValidationErrors($response, array('email', 'password'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('user creation: empty post data', $success, $response);
 
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password', 'role'))
+        \TestTools\assertValidationErrors($response, array('email', 'password', 'role'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('login: empty post data', $success, $response);
 
@@ -242,9 +183,8 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\addClient();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
+        \TestTools\assertValidationErrors($response, array('email', 'password'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('user creation: empty values', $success, $response);
 
@@ -255,9 +195,8 @@ function createUsersAndLogin() {
     );
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password', 'role'))
+        \TestTools\assertValidationErrors($response, array('email', 'password', 'role'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('login: empty values', $success, $response);
 
@@ -269,9 +208,8 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\addExecutor();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'is_active'))
+        \TestTools\assertValidationErrors($response, array('email', 'is_active'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('user creation: invalid values', $success, $response);
 
@@ -282,9 +220,8 @@ function createUsersAndLogin() {
     );
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'role'))
+        \TestTools\assertValidationErrors($response, array('email', 'role'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('login: invalid values', $success, $response);
 
@@ -294,7 +231,7 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\addClient();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['is_active'], '1')
     );
@@ -304,13 +241,22 @@ function createUsersAndLogin() {
     }
     $clientId = $response['id'];
 
+    $_POST = $validUser;
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $response = \Api\AdminActions\addClient();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('email'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('client creation: duplicatte email', $success, $response);
+
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST = $validUser;
     $_POST['role'] = 'executor';
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('client login: wrong role', $success, $response);
@@ -324,15 +270,14 @@ function createUsersAndLogin() {
         && \TestTools\assertEquals($response['id'], $clientId)
     );
     \TestTools\addTestResult('client login', $success, $response);
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
 
     $_POST = array();
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\updateClient();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('id'))
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('client update: no data', $success, $response);
 
@@ -344,9 +289,8 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\updateClient();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('id'))
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('client update: empty values', $success, $response);
 
@@ -358,9 +302,8 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\updateClient();
     $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
-        && \TestTools\assertHasKeys($response['errors'], array('id', 'is_active'))
+        \TestTools\assertValidationErrors($response, array('id', 'is_active'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
     \TestTools\addTestResult('client update: invalid values', $success, $response);
 
@@ -373,7 +316,7 @@ function createUsersAndLogin() {
     $response = \Api\AdminActions\updateClient();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('id'))
     );
     \TestTools\addTestResult('client update: invalid id', $success, $response);
@@ -385,7 +328,7 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\updateClient();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['id'], $clientId)
         && \TestTools\assertEquals($response['is_active'], '0')
@@ -398,11 +341,11 @@ function createUsersAndLogin() {
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('deactivated client login', $success, $response);
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
 
     //\Db\query('DELETE FROM `vktask1`.`clients` WHERE `email` LIKE "testuser%@test.com"');
 
@@ -412,7 +355,7 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\addExecutor();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['is_active'], '1')
     );
@@ -422,13 +365,22 @@ function createUsersAndLogin() {
     }
     $executorId = $response['id'];
 
+    $_POST = $validUser;
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $response = \Api\AdminActions\addClient();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('email'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('executor creation: duplicatte email', $success, $response);
+
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST = $validUser;
     $_POST['role'] = 'admin';
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('executor login: wrong role', $success, $response);
@@ -442,7 +394,7 @@ function createUsersAndLogin() {
         && \TestTools\assertEquals($response['id'], $executorId)
     );
     \TestTools\addTestResult('executor login', $success, $response);
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
 
     $_POST = array(
         'id' => $executorId,
@@ -451,7 +403,7 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\updateExecutor();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['id'], $executorId)
         && \TestTools\assertEquals($response['is_active'], '0')
@@ -464,11 +416,11 @@ function createUsersAndLogin() {
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('deactivated executor login', $success, $response);
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
 
     //\Db\query('DELETE FROM `vktask1`.`executors` WHERE `email` LIKE "testuser%@test.com"');
 
@@ -478,7 +430,7 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\addAdmin();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['is_active'], '1')
     );
@@ -488,13 +440,22 @@ function createUsersAndLogin() {
     }
     $adminId = $response['id'];
 
+    $_POST = $validUser;
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $response = \Api\AdminActions\addClient();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('email'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('admin creation: duplicatte email', $success, $response);
+
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST = $validUser;
     $_POST['role'] = 'client';
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('admin login: wrong role', $success, $response);
@@ -507,7 +468,7 @@ function createUsersAndLogin() {
         && \TestTools\assertEquals($response['email'], $validUser['email'])
     );
     \TestTools\addTestResult('admin login', $success, $response);
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
 
     $_POST = array(
         'id' => $adminId,
@@ -516,7 +477,7 @@ function createUsersAndLogin() {
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = \Api\AdminActions\updateAdmin();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['id'], $adminId)
         && \TestTools\assertEquals($response['is_active'], '0')
@@ -529,11 +490,11 @@ function createUsersAndLogin() {
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', 'message'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
     \TestTools\addTestResult('deactivated admin login', $success, $response);
-    $_SESSION['admin'] = $admin;
+    \Api\CommonActions\_setAuthorisedUser($admin);
 
     //\Db\query('DELETE FROM `vktask1`.`admins` WHERE `email` LIKE "testuser%@test.com"');
 

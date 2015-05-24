@@ -157,14 +157,6 @@ App.setRoute = function (route, urlArgs, doNotChangeUrl) {
     }
 };
 
-App.goBack = function (routeToSearchFor, fallbackArgs) {
-    if (window.history.length > 1) {
-        window.history.back();
-    } else {
-        App.setRoute(routeToSearchFor, fallbackArgs);
-    }
-};
-
 App.setMessageAfterRouteChange = function (message, type) {
     App.messageAfterRouteChange = {message: message, type: type};
 };
@@ -200,7 +192,7 @@ App._loadViewForRoute = function (route, routeInfo) {
         routeInfo.controller(template, false);
     }).fail(function (xhr) {
         App.isLoading(false);
-        if (!App.isAuthorisationFailure(xhr)) {
+        if (App.isNotAuthorisationFailure(xhr)) {
             AppComponents.setErrorMessageFromXhr(xhr);
         }
     });
@@ -229,12 +221,8 @@ App.isValidationErrors = function (xhr) {
     return xhr.status === 400;
 };
 
-App.isAuthorisationFailure = function (xhr) {
-    return xhr.status === 401;
-};
-
 App.isNotAuthorisationFailure = function (xhr) {
-    if (App.isAuthorisationFailure(xhr)) {
+    if (xhr.status === 401) {
         App.setRoute('login');
         AppComponents.setErrorMessageFromXhr(xhr);
         return false;
