@@ -1,3 +1,4 @@
+{{? it.total > 0 }}
 <nav>
     <ul class="pager">
         <li class="{{?it.page === 1}}disabled{{?}}">
@@ -13,3 +14,4 @@
         </li>
     </ul>
 </nav>
+{{?}}

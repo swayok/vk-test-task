@@ -169,7 +169,7 @@ App._loadViewForRoute = function (route, routeInfo) {
     }).done(function (html) {
         // use <h1> text as browser title
         var browserTitle = App.baseBrowserTitle;
-        var matches = html.match(/<h1[^>]*>([\s\S]+)<\/h1/i);
+        var matches = html.match(/<h1[^>]*>([\s\S]+?)<\/h1/i);
         if (matches && matches.length) {
             browserTitle = matches[1] + ' - ' + browserTitle;
         }
@@ -192,7 +192,7 @@ App._loadViewForRoute = function (route, routeInfo) {
         routeInfo.controller(template, false);
     }).fail(function (xhr) {
         App.isLoading(false);
-        if (App.isNotAuthorisationFailure(xhr)) {
+        if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
             AppComponents.setErrorMessageFromXhr(xhr);
         }
     });
@@ -230,4 +230,11 @@ App.isNotAuthorisationFailure = function (xhr) {
     return true;
 };
 
+App.isNotInternalServerError = function (xhr) {
+    if (xhr.status === 500) {
+        AppComponents.setErrorMessageFromXhr(xhr);
+        return false;
+    }
+    return true;
+};
 

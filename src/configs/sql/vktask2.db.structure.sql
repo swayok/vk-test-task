@@ -31,9 +31,13 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `executor_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `executed_at` timestamp NULL DEFAULT NULL,
+  `is_active` TINYINT( 1 ) NOT NULL DEFAULT  '1',
+  `paid_to_executor` FLOAT( 10, 2 ) NOT NULL DEFAULT  '0',
+  `paid_to_system` FLOAT( 10, 2 ) NOT NULL DEFAULT  '0',
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   KEY `executor_id` (`executor_id`),
+  KEY `is_active` (`is_active`),
   KEY `created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 

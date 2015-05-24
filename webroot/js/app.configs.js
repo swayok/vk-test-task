@@ -37,8 +37,9 @@ AppConfigs.configureApp = function () {
         'add-admin': 'add-admin',
         'update-admin': 'update-admin',
 
+        'get-task': 'get-task',
         'add-task': 'add-task',
-        'edit-task': 'edit-task',
+        'update-task': 'edit-task',
         'client-tasks-list': 'client-tasks-list',
         'client-tasks-list-info': 'client-tasks-list-info',
 
@@ -184,7 +185,7 @@ AppConfigs.configureApp = function () {
             cache: true,
             canBeReloaded: true
         },
-        /*'client-task-add': {
+        'client-task-add': {
             section: 'client',
             url: App.viewsUrl + 'client.task.form',
             compileTemplate: true,
@@ -193,8 +194,8 @@ AppConfigs.configureApp = function () {
             },
             cache: true,
             canBeReloaded: true
-        },*/
-        /*'client-task-edit': {
+        },
+        'client-task-edit': {
             section: 'client',
             url: App.viewsUrl + 'client.task.form',
             compileTemplate: true,
@@ -203,7 +204,7 @@ AppConfigs.configureApp = function () {
             },
             cache: true,
             canBeReloaded: true
-        },*/
+        },
         'client-profile': {
             section: 'client',
             url: App.viewsUrl + 'client.profile.form',

@@ -9,6 +9,12 @@ var AppComponents = {
     pagination: {
         viewUrl: null,
         template: null
+    },
+    dataGrid: {
+        tableContainer: null,
+        paginationContainer: null,
+        paginationInfo: {},
+        template: null
     }
 };
 
@@ -52,13 +58,12 @@ AppComponents.setErrorMessageFromXhr = function (xhr, isNotJson) {
     if (!isNotJson) {
         try {
             var json = JSON.parse(xhr.responseText);
-            if (json && json.message) {
-                AppComponents.setMessage(json.message, 'danger');
+            if (json && json._message) {
+                AppComponents.setMessage(json._message, 'danger');
             }
             return;
         } catch (exc) {}
     }
-    //AppComponents.setMessage(xhr.responseText, 'danger');
     AppComponents.setMessage('Error loading data. HTTP code: ' + xhr.status + ' ' + xhr.statusText, 'danger');
 };
 
@@ -90,7 +95,7 @@ AppComponents.displayNavigationMenu = function (section, rerender) {
                 AppComponents.activateNavigationMenuButton(App.currentRoute);
                 AppComponents.navigationMenus.currentSection = section;
             }).fail(function (xhr) {
-                if (App.isNotAuthorisationFailure(xhr)) {
+                if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
                     AppComponents.setErrorMessageFromXhr(xhr);
                 }
             });
@@ -165,7 +170,7 @@ AppComponents.initForm = function (onSuccessCallback) {
                 }
             }
         }).fail(function (xhr) {
-            if (App.isNotAuthorisationFailure(xhr)) {
+            if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
                 AppComponents.applyFormValidationErrors(form, xhr);
             }
         }).always(function () {
@@ -208,8 +213,8 @@ AppComponents.applyFormValidationErrors = function (form, xhr) {
     $.when(AppComponents.removeFormValidationErrors(form, true)).done(function () {
         try {
             var response = JSON.parse(xhr.responseText);
-            if (response.message) {
-                AppComponents.setMessage(response.message, 'danger');
+            if (response._message) {
+                AppComponents.setMessage(response._message, 'danger');
             }
             if (response.errors && $.isPlainObject(response.errors)) {
                 for (var inputName in response.errors) {
@@ -228,4 +233,125 @@ AppComponents.applyFormValidationErrors = function (form, xhr) {
             AppComponents.setErrorMessageFromXhr(xhr, true);
         }
     });
+};
+
+AppComponents.initDataGrid = function (dataGridTemplate, dataSourceApiAction, paginationInfoApiAction) {
+    App.isLoading(true);
+    AppComponents.dataGrid.template = dataGridTemplate;
+    AppComponents.dataGrid.tableContainer = $('<div class="data-grid-table-container"></div>');
+    AppComponents.dataGrid.paginationContainer = $('<div class="data-grid-pagination-container"></div>');
+    App.container.html(AppComponents.dataGrid.tableContainer).append(AppComponents.dataGrid.paginationContainer);
+    // load data
+    AppComponents.dataGrid.paginationInfo = {
+        total: 0,
+        pages: 1,
+        items_per_page: 25,
+        page: App.currentUrlArgs.page > 1 ? App.currentUrlArgs.page - 0 : 1
+    };
+    var paginationInfoAjaxOptions = {
+        url: App.getApiUrl(paginationInfoApiAction),
+        method: 'GET',
+        dataType: 'json',
+        cache: false
+    };
+    $.when(
+        AppComponents.adminLoadUsers(dataSourceApiAction, true),
+        App.getUser(),
+        $.ajax(paginationInfoAjaxOptions),
+        AppComponents.getPaginationTemplate()
+    ).done(function (itemsResponse, admin, paginationInfoResponse, paginationTemplate) {
+        AppComponents.dataGrid.tableContainer.html(AppComponents.dataGrid.template({items: itemsResponse[0]}));
+        paginationInfoResponse[0].page = AppComponents.dataGrid.paginationInfo.page;
+        AppComponents.dataGrid.paginationInfo = paginationInfoResponse[0];
+        AppComponents.dataGrid.paginationContainer.html(paginationTemplate(AppComponents.dataGrid.paginationInfo));
+    }).fail(function (xhr) {
+        if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
+            App.setRoute(App.userInfo && App.userInfo._route ? App.userInfo._route : 'login');
+            AppComponents.setErrorMessageFromXhr(xhr);
+        }
+    }).always(function () {
+        App.isLoading(false);
+    });
+    AppComponents.adminDataGridApplyEventHandlers(dataSourceApiAction);
+};
+
+AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
+    // pagination
+    AppComponents.dataGrid.paginationContainer.on('click', 'a.next-page, a.prev-page', function () {
+        var newPageNum = AppComponents.dataGrid.paginationInfo.page + ($(this).hasClass('next-page') ? 1 : -1);
+        if (
+            !$(this).parent().hasClass('disabled')
+            && newPageNum > 0
+            && newPageNum <= AppComponents.dataGrid.paginationInfo.pages
+        ) {
+            var justReloadData = AppComponents.dataGrid.paginationInfo.page === newPageNum;
+            AppComponents.dataGrid.paginationInfo.page = newPageNum;
+            var html = AppComponents.getPaginationTemplate(AppComponents.dataGrid.paginationInfo);
+            AppComponents.dataGrid.paginationContainer.html(html);
+            AppComponents.adminLoadUsers(dataSourceApiAction, false, justReloadData);
+        }
+        return false;
+    });
+    // actions
+    AppComponents.dataGrid.tableContainer.on('click', 'td.actions a', function () {
+        var $el = $(this);
+        var route = $el.attr('data-route');
+        var queryArgs = $el.attr('data-args') || '';
+        if ($el.attr('data-route')) {
+            var urlArgs = Utils.parseUrlQuery(queryArgs);
+            urlArgs.back_url = App.getRouteUrl();
+            App.setRoute($el.attr('data-route'), urlArgs);
+        } else if ($el.attr('data-api-action')) {
+            var method = $el.attr('data-method') || 'GET';
+            AppComponents.dataGrid.tableContainer.addClass('loading');
+            $.ajax({
+                url: App.getApiUrl($el.attr('data-api-action')),
+                data: queryArgs,
+                method: method,
+                dataType: 'json',
+                cache: false
+            }).done(function (json) {
+                if (json._message) {
+                    AppComponents.setMessage(json._message, 'success');
+                }
+                AppComponents.adminLoadUsers(dataSourceApiAction, false, true);
+            }).fail(function () {
+                if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
+                    App.setErrorMessageFromXhr(xhr);
+                }
+            }).always(function () {
+                AppComponents.dataGrid.tableContainer.removeClass('loading');
+            });
+        } else {
+            AppComponents.setMessage('Invalid action', 'danger');
+        }
+    })
+};
+
+AppComponents.adminLoadUsers = function (dataSourceApiAction, returnDeferred, justReloadData) {
+    var request = $.ajax({
+        url: App.getApiUrl(dataSourceApiAction) + '&page=' + AppComponents.dataGrid.paginationInfo.page,
+        method: 'GET',
+        dataType: 'json',
+        cache: false
+    });
+    if (returnDeferred) {
+        return request;
+    }
+    if (!justReloadData) {
+        App.currentUrlArgs.page = AppComponents.dataGrid.paginationInfo.page;
+        App._changeBrowserUrl();
+    }
+    AppComponents.dataGrid.tableContainer.addClass('loading');
+    request.done(function (items) {
+        AppComponents.dataGrid.tableContainer.html(AppComponents.dataGrid.template({items: items}));
+    }).fail(function (xhr) {
+        if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
+            AppComponents.setErrorMessageFromXhr(xhr);
+        }
+    }).always(function () {
+        setTimeout(function () {
+            AppComponents.dataGrid.tableContainer.removeClass('loading');
+        }, App.animationsDurationMs);
+    })
 };

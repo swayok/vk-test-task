@@ -49,6 +49,7 @@ function runAction($action) {
             case 'client':
                 require_once 'api.client.actions.php';
                 $allowedActions += array(
+                    'get-task' => '\Api\ClientActions\getTask',
                     'add-task' => '\Api\ClientActions\addTask',
                     'edit-task' => '\Api\ClientActions\editTask',
                     'client-tasks-list' => '\Api\ClientActions\tasksList',

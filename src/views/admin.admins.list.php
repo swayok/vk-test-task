@@ -25,12 +25,18 @@
         </tr>
     </thead>
     <tbody>
+        {{? !it.items || !it.items.length }}
+        <tr>
+            <td colspan="6" class="no-items"><?php echo \Dictionary\translate('No admins found'); ?></td>
+        </tr>
+        {{?}}
         {{~it.items :item}}
         <tr>
             <td>{{=item.id}}</td>
             <td>{{=item.email}}</td>
             {{?item.is_active == 1}}
-                <td class="success"><?php echo \Dictionary\translate('Active'); ?>{{?}}</td>
+                <td class="success"><?php echo \Dictionary\translate('Active'); ?></td>
+            {{?}}
             {{?item.is_active == 0}}
                 <td class="danger"><?php echo \Dictionary\translate('Inactive'); ?></td>
             {{?}}

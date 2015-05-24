@@ -27,7 +27,7 @@ function _addUser($role) {
             'type' => 'email',
             'messages' => array(
                 'required' => \Dictionary\translate('Enter e-mail'),
-                'regexp' => \Dictionary\translate('Invalid e-mail')
+                'type' => \Dictionary\translate('Invalid e-mail')
             )
         ),
         'password' => array(
