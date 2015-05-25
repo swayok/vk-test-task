@@ -8,6 +8,7 @@ var App = {
     loadedRoutes: {},
     apiActions: {},
     currentRoute: null,
+    currentSection: null,
     currentUrlArgs: {},
     messageAfterRouteChange: null,
     animationsDurationMs: 150,
@@ -71,7 +72,7 @@ App.getRouteUrl = function (route, urlArgs) {
 App.setUser = function (userInfo) {
     App.userInfo = userInfo;
     if (App.currentRoute && App.routes[App.currentRoute].section) {
-        AppComponents.displayNavigationMenu(App.routes[App.currentRoute].section, true);
+        AppComponents.displayNavigationMenu(true);
     }
 };
 
@@ -106,6 +107,11 @@ App.getUser = function (reload) {
 };
 
 App.setCurrentRoute = function (route, urlArgs) {
+    if (!route || !App.routes[route]) {
+        var error = 'Unknown route [' + route + '] detected';
+        AppComponents.setMessage(error, 'danger');
+        return null;
+    }
     if (!urlArgs || !$.isPlainObject(urlArgs)) {
         urlArgs = {};
     }
@@ -118,6 +124,7 @@ App.setCurrentRoute = function (route, urlArgs) {
         }
         App.currentUrlArgs = urlArgs;
         App.currentRoute = route;
+        App.currentSection = App.routes[route].section;
         return true;
     } else {
         return false;
@@ -135,13 +142,12 @@ App.setRoute = function (route, urlArgs, doNotChangeUrl) {
     } else {
         AppComponents.hideMessage();
     }
-    if (!route || !App.routes[route]) {
-        var error = 'Unknown route [' + route + '] detected';
-        AppComponents.setMessage(error, 'danger');
-        return false;
+
+    var isDifferentRoute = App.setCurrentRoute(route, urlArgs);
+    if (isDifferentRoute === null) {
+        return;
     }
     var routeInfo = App.routes[route];
-    var isDifferentRoute = App.setCurrentRoute(route, urlArgs);
     if (isDifferentRoute || routeInfo.canBeReloaded) {
         if (!routeInfo.url) {
             routeInfo.controller();

@@ -7,7 +7,9 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/?route=admin-dashboard" ><?php echo \Dictionary\translate('OES') ?>: <?php echo \Dictionary\translate('System management') ?></a>
+        <a class="navbar-brand" href="/?route=admin-dashboard" >
+            <?php echo \Dictionary\translate('OES') ?>: <?php echo \Dictionary\translate('System management') ?>
+        </a>
     </div>
         <div class="collapse navbar-collapse" id="admin-navigation-links">
             <ul class="nav navbar-nav">
@@ -26,7 +28,7 @@
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li>
-                    <a href="/?route=admin-profile" id="profile-edit">{{?it.user}}{{=it.user.email}}{{?}}</a>
+                    <a href="/?route=admin-profile" id="profile-edit">{{? it.user }}{{= it.user.email }}{{?}}</a>
                 </li>
                 <li><a href="/?route=logout"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a></li>
             </ul>

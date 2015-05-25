@@ -7,23 +7,24 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/?route=client-tasks-list" >
-            <?php echo \Dictionary\translate('OES') ?>: <?php echo \Dictionary\translate('Client') ?>
+        <a class="navbar-brand" href="/?route=executor-pending-tasks-list">
+            <?php echo \Dictionary\translate('OES') ?>: <?php echo \Dictionary\translate('Executor') ?>
         </a>
     </div>
         <div class="collapse navbar-collapse" id="client-navigation-links">
             <ul class="nav navbar-nav">
                 <li>
-                    <a href="/?route=client-tasks-list"><?php echo \Dictionary\translate('My tasks'); ?></a>
+                    <a href="/?route=executor-pending-tasks-list"><?php echo \Dictionary\translate('Pending tasks'); ?></a>
                 </li>
                 <li>
-                    <a href="/?route=client-task-add"><?php echo \Dictionary\translate('Add task'); ?></a>
+                    <a href="/?route=executor-executed-tasks-list"><?php echo \Dictionary\translate('Executed tasks'); ?></a>
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 <li>
-                    <a href="/?route=client-profile" id="profile-edit">{{? it.user }}{{= it.user.email }}{{?}}</a>
+                    <a href="/?route=executor-profile" id="profile-edit">{{? it.user }}{{= it.user.email }}{{?}}</a>
                 </li>
+                <li class="navbar-text">{{= it.user.balance }} <?php echo \Dictionary\translate('RUB'); ?></li>
                 <li><a href="/?route=logout"><span class="glyphicon glyphicon-log-out" aria-hidden="true"></span></a></li>
             </ul>
         </div>

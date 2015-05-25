@@ -79,8 +79,12 @@ function login() {
     _unsetAuthorisation();
     $userRole = strtolower($_POST['role']);
     $table = $userRole . 's';
+    $fields = '`id`, `email`';
+    if ($userRole === 'executor') {
+        $fields .= ', `balance`';
+    }
     $user = \Db\smartSelect(
-        "SELECT `id`, `email` FROM `vktask1`.`{$table}` WHERE `is_active` = :is_active AND `email` = :email AND `password` = :password",
+        "SELECT $fields FROM `vktask1`.`{$table}` WHERE `is_active` = :is_active AND `email` = :email AND `password` = :password",
         array(
             'is_active' => true,
             'email' => strtolower($_POST['email']),
@@ -98,7 +102,7 @@ function login() {
                 $user['_route'] = 'client-tasks-list';
                 break;
             case 'executor':
-                $user['_route'] = 'executor-tasks-list';
+                $user['_route'] = 'executor-pending-tasks-list';
                 break;
         }
         $user['role'] = $userRole;

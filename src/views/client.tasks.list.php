@@ -42,21 +42,21 @@
                 </a>
             </td>
             <td>{{= item.payment }} <?php echo \Dictionary\translate('RUB'); ?></td>
-            <td>{{=item.created_at}}</td>
+            <td>{{= item.created_at }}</td>
             {{? item.is_active == 1 }}
                 {{? !item.executed_at }}
                 <td class="warning"><?php echo \Dictionary\translate('Waiting'); ?></td>
                 {{??}}
                 <td class="success">
                     <?php echo \Dictionary\translate('Executed'); ?>
-                    <div class="item-executed-at">{{= it.executed_at }}</div>
+                    <div class="item-executed-at">{{= item.executed_at }}</div>
                 </td>
                 {{?}}
             {{?}}
             {{? item.is_active == 0 }}
                 <td class="danger"><?php echo \Dictionary\translate('Inactive'); ?></td>
             {{?}}
-            <td>{{=item.executor_id || ''}}</td>
+            <td>{{= item.executor_email || '' }}</td>
             <td class="actions">
                 {{? !item.executor_id }}
                     <a data-route="client-task-edit" data-args="id={{=item.id}}"

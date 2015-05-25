@@ -40,7 +40,7 @@ $__TRANSLATIONS = array(
     'Activate' => 'Активировать',
     'Deactivate' => 'Деактивировать',
     'Status' => 'Состояние',
-    'Created at' => 'Дата создания',
+    'Created at' => 'Время создания',
     'Created by' => 'Создатель',
     'Actions' => 'Действия',
     'Active' => 'Активен',
@@ -90,7 +90,15 @@ $__TRANSLATIONS = array(
     'Waiting' => 'Ожидание',
     'Executed' => 'Выполнено',
     'Task already exetuted' => 'Задание уже выполнено',
-    'Enter payment for execution' => 'Укажите оплату за выполнение'
+    'Enter payment for execution' => 'Укажите оплату за выполнение',
+    'Execute' => 'Выполнить',
+    'Pending tasks' => 'Доступные задания',
+    'Executed tasks' => 'Выполненные задания',
+    'Executed at' => 'Время выполнения',
+    'There is no pending tasks yet' => 'Пока нет доступных заданий',
+    'There is no executed tasks yet' => 'Вы не выполнили еще ни одного задания',
+    'Task have been already executed' => 'Задание уже выполнено',
+    'Task executed successfully' => 'Задание успешно выполнено'
 );
 
 function translate($string) {

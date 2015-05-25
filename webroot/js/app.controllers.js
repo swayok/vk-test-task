@@ -33,7 +33,7 @@ AppController.logout = function () {
 };
 
 AppController.adminDashboard = function (template, isFromCache) {
-    AppComponents.displayNavigationMenu('admin');
+    AppComponents.displayNavigationMenu();
     // todo: request dasboard data from api
     App.isLoading(true);
     $.when(App.getUser()).done(function (admin) {
@@ -45,12 +45,11 @@ AppController.adminDashboard = function (template, isFromCache) {
 };
 
 AppController.adminUsersDataGrid = function (dataGridTemplate, role, isFromCache) {
-    AppComponents.displayNavigationMenu('admin');
     AppComponents.initDataGrid(dataGridTemplate, role + 's-list', role + 's-list-info');
 };
 
 AppController.adminUserForm = function (template, role, editMode, isFromCache) {
-    AppComponents.displayNavigationMenu('admin');
+    AppComponents.displayNavigationMenu();
     var backUrl = App.currentUrlArgs.back_url || null;
     var backUrlArgs;
     if (backUrl) {
@@ -94,7 +93,7 @@ AppController.adminUserForm = function (template, role, editMode, isFromCache) {
 };
 
 AppController.profileForm = function (template, role, isFromCache) {
-    AppComponents.displayNavigationMenu(role);
+    AppComponents.displayNavigationMenu();
     App.isLoading(true);
     $.when(App.getUser(true))
         .done(function (item) {
@@ -106,12 +105,10 @@ AppController.profileForm = function (template, role, isFromCache) {
 };
 
 AppController.clientTasksDataGrid = function (dataGridTemplate, isFromCache) {
-    AppComponents.displayNavigationMenu('client');
     AppComponents.initDataGrid(dataGridTemplate, 'client-tasks-list', 'client-tasks-list-info');
 };
 
 AppController.clientTaskForm = function (template, editMode, isFromCache) {
-    AppComponents.displayNavigationMenu('client');
     var backUrl = App.currentUrlArgs.back_url || null;
     var backUrlArgs;
     if (backUrl) {
@@ -152,4 +149,16 @@ AppController.clientTaskForm = function (template, editMode, isFromCache) {
         AppComponents.initForm();
         App.isLoading(false);
     }
+};
+
+AppController.executorPendingTasksDataGrid = function (dataGridTemplate, isFromCache) {
+    AppComponents.initDataGrid(dataGridTemplate, 'pending-tasks-list', 'pending-tasks-list-info');
+    AppComponents.dataGrid.tableContainer.on('dataGridApiActionComplete:execute-task', function (event, data) {
+        App.userInfo.balance = data.data.balance;
+        AppComponents.displayNavigationMenu(true);
+    });
+};
+
+AppController.executorExecutedTasksDataGrid = function (dataGridTemplate, isFromCache) {
+    AppComponents.initDataGrid(dataGridTemplate, 'executed-tasks-list', 'executed-tasks-list-info');
 };

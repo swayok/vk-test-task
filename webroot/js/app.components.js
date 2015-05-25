@@ -71,8 +71,9 @@ AppComponents.hideMessage = function () {
     return AppComponents.messagesContainer.slideUp(App.animationsDurationMs);
 };
 
-AppComponents.displayNavigationMenu = function (section, rerender) {
-    if (AppComponents.navigationMenus.viewsUrls[section]) {
+AppComponents.displayNavigationMenu = function (rerender) {
+    var section = App.currentSection;
+    if (section && AppComponents.navigationMenus.viewsUrls[section]) {
         if (AppComponents.navigationMenus.templates[section]) {
             if (AppComponents.navigationMenus.templates[section] === true) {
                 // already loading a template
@@ -236,6 +237,7 @@ AppComponents.applyFormValidationErrors = function (form, xhr) {
 };
 
 AppComponents.initDataGrid = function (dataGridTemplate, dataSourceApiAction, paginationInfoApiAction) {
+    AppComponents.displayNavigationMenu();
     App.isLoading(true);
     AppComponents.dataGrid.template = dataGridTemplate;
     AppComponents.dataGrid.tableContainer = $('<div class="data-grid-table-container"></div>');
@@ -255,11 +257,10 @@ AppComponents.initDataGrid = function (dataGridTemplate, dataSourceApiAction, pa
         cache: false
     };
     $.when(
-        AppComponents.adminLoadUsers(dataSourceApiAction, true),
-        App.getUser(),
+        AppComponents.dataGridLoadRecords(dataSourceApiAction, true),
         $.ajax(paginationInfoAjaxOptions),
         AppComponents.getPaginationTemplate()
-    ).done(function (itemsResponse, admin, paginationInfoResponse, paginationTemplate) {
+    ).done(function (itemsResponse, paginationInfoResponse, paginationTemplate) {
         AppComponents.dataGrid.tableContainer.html(AppComponents.dataGrid.template({items: itemsResponse[0]}));
         paginationInfoResponse[0].page = AppComponents.dataGrid.paginationInfo.page;
         AppComponents.dataGrid.paginationInfo = paginationInfoResponse[0];
@@ -272,10 +273,10 @@ AppComponents.initDataGrid = function (dataGridTemplate, dataSourceApiAction, pa
     }).always(function () {
         App.isLoading(false);
     });
-    AppComponents.adminDataGridApplyEventHandlers(dataSourceApiAction);
+    AppComponents.dataGridApplyEventHandlers(dataSourceApiAction);
 };
 
-AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
+AppComponents.dataGridApplyEventHandlers = function (dataSourceApiAction) {
     // pagination
     AppComponents.dataGrid.paginationContainer.on('click', 'a.next-page, a.prev-page', function () {
         var newPageNum = AppComponents.dataGrid.paginationInfo.page + ($(this).hasClass('next-page') ? 1 : -1);
@@ -288,7 +289,7 @@ AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
             AppComponents.dataGrid.paginationInfo.page = newPageNum;
             var html = AppComponents.getPaginationTemplate(AppComponents.dataGrid.paginationInfo);
             AppComponents.dataGrid.paginationContainer.html(html);
-            AppComponents.adminLoadUsers(dataSourceApiAction, false, justReloadData);
+            AppComponents.dataGridLoadRecords(dataSourceApiAction, false, justReloadData);
         }
         return false;
     });
@@ -304,8 +305,9 @@ AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
         } else if ($el.attr('data-api-action')) {
             var method = $el.attr('data-method') || 'GET';
             AppComponents.dataGrid.tableContainer.addClass('loading');
+            var apiAction = $el.attr('data-api-action');
             $.ajax({
-                url: App.getApiUrl($el.attr('data-api-action')),
+                url: App.getApiUrl(apiAction),
                 data: queryArgs,
                 method: method,
                 dataType: 'json',
@@ -314,7 +316,11 @@ AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
                 if (json._message) {
                     AppComponents.setMessage(json._message, 'success');
                 }
-                AppComponents.adminLoadUsers(dataSourceApiAction, false, true);
+                AppComponents.dataGridLoadRecords(dataSourceApiAction, false, true);
+                AppComponents.dataGrid.tableContainer.trigger(
+                    'dataGridApiActionComplete:' + apiAction,
+                    {element: $el, data: json, queryArgs: queryArgs}
+                );
             }).fail(function (xhr) {
                 if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
                     AppComponents.setErrorMessageFromXhr(xhr);
@@ -328,7 +334,7 @@ AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
     })
 };
 
-AppComponents.adminLoadUsers = function (dataSourceApiAction, returnDeferred, justReloadData) {
+AppComponents.dataGridLoadRecords = function (dataSourceApiAction, returnDeferred, justReloadData) {
     var request = $.ajax({
         url: App.getApiUrl(dataSourceApiAction) + '&page=' + AppComponents.dataGrid.paginationInfo.page,
         method: 'GET',

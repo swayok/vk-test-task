@@ -176,7 +176,7 @@ AppConfigs.configureApp = function () {
         },
 
         'client-tasks-list': {
-            section: 'admin',
+            section: 'client',
             url: App.viewsUrl + 'client.tasks.list',
             compileTemplate: true,
             controller: function (template, isFromCache) {
@@ -211,6 +211,37 @@ AppConfigs.configureApp = function () {
             compileTemplate: true,
             controller: function (template, isFromCache) {
                 AppController.profileForm(template, 'client', isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+
+        'executor-pending-tasks-list': {
+            section: 'executor',
+            url: App.viewsUrl + 'executor.tasks.list',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.executorPendingTasksDataGrid(template, isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+        'executor-executed-tasks-list': {
+            section: 'executor',
+            url: App.viewsUrl + 'executor.tasks.list&executed_tasks=1',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.executorExecutedTasksDataGrid(template, isFromCache);
+            },
+            cache: true,
+            canBeReloaded: true
+        },
+        'executor-profile': {
+            section: 'executor',
+            url: App.viewsUrl + 'executor.profile.form',
+            compileTemplate: true,
+            controller: function (template, isFromCache) {
+                AppController.profileForm(template, 'executor', isFromCache);
             },
             cache: true,
             canBeReloaded: true

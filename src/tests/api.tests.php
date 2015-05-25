@@ -57,7 +57,7 @@ function loginStatus() {
         'id' => '1',
         'email' => 'executor@test.ru',
         'role' => 'executor',
-        '_route' => 'executor-tasks-list',
+        '_route' => 'executor-pending-tasks-list',
         'balance' => 111.11
     );
 
@@ -337,9 +337,13 @@ function _testUserRole($role, $validUser, $admin) {
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST['role'] = $role;
+    $expectedFields = array('id', 'email', '_route', 'role');
+    if ($role === 'executor') {
+        $expectedFields[] = 'balance';
+    }
     $response = \Api\CommonActions\login();
     $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
+        \TestTools\assertHasKeys($response, $expectedFields)
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['role'], $role)
     );
