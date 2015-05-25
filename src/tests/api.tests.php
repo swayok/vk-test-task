@@ -225,61 +225,55 @@ function createUsersAndLogin() {
     );
     \TestTools\addTestResult('login: invalid values', $success, $response);
 
-    // client creation, login, deactivation
+    // users creation, login, deactivation, get data, get lists and lists info
 
+    // todo: add tests for [get data, get lists and lists info]
+
+    $done = _testUserRole('client', $validUser, $admin);
+    if (!$done) {
+        return \TestTools\getTestResults(true);
+    }
+
+    $done = _testUserRole('executor', $validUser, $admin);
+    if (!$done) {
+        return \TestTools\getTestResults(true);
+    }
+
+    $done = _testUserRole('admin', $validUser, $admin);
+    if (!$done) {
+        return \TestTools\getTestResults(true);
+    }
+
+    return \TestTools\getTestResults(true);
+}
+
+function _testUserRole($role, $validUser, $admin) {
+    $validUser['password'] .= $role;
+    $ucRole = ucfirst($role);
+    $addUserFn = "Api\\AdminActions\\add{$ucRole}";
+    $updateUserFn = "Api\\AdminActions\\update{$ucRole}";
     $_POST = $validUser;
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\addClient();
+    $response = $addUserFn();
     $success = (
         \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
         && \TestTools\assertEquals($response['is_active'], '1')
     );
-    \TestTools\addTestResult('client creation', $success, $response);
+    \TestTools\addTestResult("$role creation", $success, $response);
     if (!$success) {
-        return \TestTools\getTestResults(true);
+        return false;
     }
-    $clientId = $response['id'];
-
-    $_POST = $validUser;
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\addClient();
-    $success = (
-        \TestTools\assertValidationErrors($response, array('email'))
-        && \TestTools\assertHasKeys($response, array('errors', '_message'))
-    );
-    \TestTools\addTestResult('client creation: duplicatte email', $success, $response);
-
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST = $validUser;
-    $_POST['role'] = 'executor';
-    $response = \Api\CommonActions\login();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', '_message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
-    );
-    \TestTools\addTestResult('client login: wrong role', $success, $response);
-
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST['role'] = 'client';
-    $response = \Api\CommonActions\login();
-    $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
-        && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['id'], $clientId)
-    );
-    \TestTools\addTestResult('client login', $success, $response);
-    \Api\CommonActions\_setAuthorisedUser($admin);
+    $userId = $response['id'];
 
     $_POST = array();
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateClient();
+    $response = $updateUserFn();
     $success = (
         \TestTools\assertValidationErrors($response, array('id'))
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
-    \TestTools\addTestResult('client update: no data', $success, $response);
+    \TestTools\addTestResult("$role update: no data", $success, $response);
 
     $_POST = array(
         'id' => '',
@@ -287,12 +281,12 @@ function createUsersAndLogin() {
         'password' => ''
     );
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateClient();
+    $response = $updateUserFn();
     $success = (
         \TestTools\assertValidationErrors($response, array('id'))
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
-    \TestTools\addTestResult('client update: empty values', $success, $response);
+    \TestTools\addTestResult("$role update: empty values", $success, $response);
 
     $_POST = array(
         'id' => 'qq',
@@ -300,203 +294,84 @@ function createUsersAndLogin() {
         'password' => ''
     );
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateClient();
+    $response = $updateUserFn();
     $success = (
         \TestTools\assertValidationErrors($response, array('id', 'is_active'))
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
-    \TestTools\addTestResult('client update: invalid values', $success, $response);
+    \TestTools\addTestResult("$role update: invalid values", $success, $response);
 
-    $notExistsingId = intval(\Db\selectValue('SELECT MAX(`id`) FROM `vktask1`.`clients`')) + 90000;
+    $notExistsingId = intval(\Db\selectValue("SELECT MAX(`id`) FROM `vktask1`.`{$role}s`")) + 90000;
     $_POST = array(
         'id' => $notExistsingId,
         'is_active' => '0',
     );
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateClient();
+    $response = $updateUserFn();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('id'))
     );
-    \TestTools\addTestResult('client update: invalid id', $success, $response);
-
-    $_POST = array(
-        'id' => $clientId,
-        'is_active' => '0'
-    );
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateClient();
-    $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
-        && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['id'], $clientId)
-        && \TestTools\assertEquals($response['is_active'], '0')
-    );
-    \TestTools\addTestResult('client deactivation', $success, $response);
-
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST = $validUser;
-    $_POST['role'] = 'client';
-    $response = \Api\CommonActions\login();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', '_message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
-    );
-    \TestTools\addTestResult('deactivated client login', $success, $response);
-    \Api\CommonActions\_setAuthorisedUser($admin);
-
-    //\Db\query('DELETE FROM `vktask1`.`clients` WHERE `email` LIKE "testuser%@test.com"');
-
-    // executor creation, login, deactivation
+    \TestTools\addTestResult("$role update: invalid id", $success, $response);
 
     $_POST = $validUser;
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\addExecutor();
-    $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
-        && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['is_active'], '1')
-    );
-    \TestTools\addTestResult('executor creation', $success, $response);
-    if (!$success) {
-        return \TestTools\getTestResults(true);
-    }
-    $executorId = $response['id'];
-
-    $_POST = $validUser;
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\addClient();
+    $response = $addUserFn();
     $success = (
         \TestTools\assertValidationErrors($response, array('email'))
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
     );
-    \TestTools\addTestResult('executor creation: duplicatte email', $success, $response);
+    \TestTools\addTestResult("$role creation: duplicate email", $success, $response);
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST = $validUser;
-    $_POST['role'] = 'admin';
+    $_POST['role'] = $role === 'client' ? 'executor' : 'client';
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
-    \TestTools\addTestResult('executor login: wrong role', $success, $response);
+    \TestTools\addTestResult("$role login: wrong role", $success, $response);
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST['role'] = 'executor';
+    $_POST['role'] = $role;
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['id'], $executorId)
+        && \TestTools\assertEquals($response['role'], $role)
     );
-    \TestTools\addTestResult('executor login', $success, $response);
+    \TestTools\addTestResult("$role login", $success, $response);
     \Api\CommonActions\_setAuthorisedUser($admin);
 
     $_POST = array(
-        'id' => $executorId,
+        'id' => $userId,
         'is_active' => '0'
     );
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateExecutor();
+    $response = $updateUserFn();
     $success = (
         \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
         && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['id'], $executorId)
+        && \TestTools\assertEquals($response['id'], $userId)
         && \TestTools\assertEquals($response['is_active'], '0')
     );
-    \TestTools\addTestResult('executor deactivation', $success, $response);
+    \TestTools\addTestResult("$role deactivation", $success, $response);
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_POST = $validUser;
-    $_POST['role'] = 'executor';
+    $_POST['role'] = $role;
     $response = \Api\CommonActions\login();
     $success = (
         \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
         && \TestTools\assertHasKeys($response, array('errors', '_message'))
         && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
     );
-    \TestTools\addTestResult('deactivated executor login', $success, $response);
+    \TestTools\addTestResult("deactivated $role login", $success, $response);
     \Api\CommonActions\_setAuthorisedUser($admin);
 
-    //\Db\query('DELETE FROM `vktask1`.`executors` WHERE `email` LIKE "testuser%@test.com"');
-
-    // admin creation, login, deactivation
-
-    $_POST = $validUser;
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\addAdmin();
-    $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
-        && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['is_active'], '1')
-    );
-    \TestTools\addTestResult('admin creation', $success, $response);
-    if (!$success) {
-        return \TestTools\getTestResults(true);
-    }
-    $adminId = $response['id'];
-
-    $_POST = $validUser;
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\addClient();
-    $success = (
-        \TestTools\assertValidationErrors($response, array('email'))
-        && \TestTools\assertHasKeys($response, array('errors', '_message'))
-    );
-    \TestTools\addTestResult('admin creation: duplicatte email', $success, $response);
-
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST = $validUser;
-    $_POST['role'] = 'client';
-    $response = \Api\CommonActions\login();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', '_message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
-    );
-    \TestTools\addTestResult('admin login: wrong role', $success, $response);
-
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST['role'] = 'admin';
-    $response = \Api\CommonActions\login();
-    $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', '_route', 'role'))
-        && \TestTools\assertEquals($response['email'], $validUser['email'])
-    );
-    \TestTools\addTestResult('admin login', $success, $response);
-    \Api\CommonActions\_setAuthorisedUser($admin);
-
-    $_POST = array(
-        'id' => $adminId,
-        'is_active' => '0'
-    );
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $response = \Api\AdminActions\updateAdmin();
-    $success = (
-        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
-        && \TestTools\assertEquals($response['email'], $validUser['email'])
-        && \TestTools\assertEquals($response['id'], $adminId)
-        && \TestTools\assertEquals($response['is_active'], '0')
-    );
-    \TestTools\addTestResult('admin deactivation', $success, $response);
-
-    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
-    $_POST = $validUser;
-    $_POST['role'] = 'admin';
-    $response = \Api\CommonActions\login();
-    $success = (
-        \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
-        && \TestTools\assertHasKeys($response, array('errors', '_message'))
-        && \TestTools\assertHasKeys($response['errors'], array('email', 'password'))
-    );
-    \TestTools\addTestResult('deactivated admin login', $success, $response);
-    \Api\CommonActions\_setAuthorisedUser($admin);
-
-    //\Db\query('DELETE FROM `vktask1`.`admins` WHERE `email` LIKE "testuser%@test.com"');
-
-    return \TestTools\getTestResults(true);
+    \Db\query("DELETE FROM `vktask1`.`{$role}s` WHERE `email` LIKE 'testuser%@test.com'");
+    return true;
 }
