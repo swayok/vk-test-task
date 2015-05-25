@@ -26,8 +26,8 @@ function addTask() {
             'required' => true,
             'type' => 'float',
             'convert' => true,
-            'default' => true,
             'messages' => array(
+                'required' => \Dictionary\translate('Enter payment for execution'),
                 'type' => \Dictionary\translate('Invalid value'),
             )
         ),
@@ -42,7 +42,7 @@ function addTask() {
         )
     );
     $errors = \Utils\validateData($_POST, $validators);
-    if (!empty($errors['payment']) && $_POST['payment'] < MIN_TASK_PAYMENT) {
+    if (empty($errors['payment']) && $_POST['payment'] < MIN_TASK_PAYMENT) {
         $errors['payment'] = str_ireplace(':value', MIN_TASK_PAYMENT, \Dictionary\translate('Minimal payment is :value RUB'));
     }
     if (!empty($errors)) {
@@ -62,6 +62,159 @@ function addTask() {
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
             return array('_message' => \Dictionary\translate('Failed to save data to DB'));
+        }
+    } catch (\Exception $exc) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+        return array('_message' => $exc->getMessage());
+    }
+}
+
+
+function updateTask () {
+    if (!\Api\CommonActions\_isAuthorisedAs('client')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isPost()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $validators = array(
+        'id' => array(
+            'required' => true,
+            'type' => 'id',
+            'convert' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('ID is required'),
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+        'title' => array(
+            'required' => false,
+            'remove_if_empty' => true,
+            'messages' => array(
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+        'description' => array(
+            'required' => false,
+            'remove_if_empty' => true,
+            'messages' => array(
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+        'payment' => array(
+            'required' => false,
+            'type' => 'float',
+            'convert' => true,
+            'remove_if_empty' => true,
+            'messages' => array(
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+        'is_active' => array(
+            'required' => false,
+            'convert' => true,
+            'type' => 'bool',
+            'remove_if_empty' => true,
+            'messages' => array(
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        )
+    );
+    $errors = \Utils\validateData($_POST, $validators);
+    if (empty($errors['payment']) && !empty($_POST['payment']) && $_POST['payment'] < MIN_TASK_PAYMENT) {
+        $errors['payment'] = str_ireplace(':value', MIN_TASK_PAYMENT, \Dictionary\translate('Minimal payment is :value RUB'));
+    }
+    if (!empty($errors)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Form contains invalid data'));
+    }
+    $dataToUpdate = array_intersect_key($_POST, $validators);
+    unset($dataToUpdate['id']);
+    if (empty($dataToUpdate)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array('_message' => \Dictionary\translate('No data passed'));
+    }
+
+    try {
+        $client = \Api\CommonActions\_getAuthorisedUser();
+        $query = "SELECT COUNT(*) as cnt FROM `vktask2`.`tasks` WHERE `id` = :id AND `client_id` = :client_id";
+        if (!\Db\selectValue($query, array('id' => $_POST['id'], 'client_id' => $client['id']))) {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+            return array(
+                '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                'errors' => array(
+                    'id' => \Dictionary\translate('Invalid value')
+                )
+            );
+        }
+        $task = \Db\updateById($dataToUpdate, '`vktask2`.`tasks`', $_POST['id']);
+        if (!empty($task)) {
+            $task['_message'] = \Dictionary\translate('Task updated successfully');
+            return $task;
+        } else {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+            return array('_message' => \Dictionary\translate('Failed to save data to DB'));
+        }
+    } catch (\Exception $exc) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+        return array('_message' => $exc->getMessage());
+    }
+}
+
+function getTask() {
+    if (!\Api\CommonActions\_isAuthorisedAs('client')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isGet()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $errors = \Utils\validateData($_GET, array(
+        'id' => array(
+            'required' => true,
+            'type' => 'id',
+            'convert' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('ID is required'),
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        ),
+        'not_executed' => array(
+            'required' => false,
+            'type' => 'bool',
+            'convert' => true,
+            'default' => false,
+            'messages' => array(
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        )
+    ));
+    if (!empty($errors)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Invalid request data'));
+    }
+    try {
+        $client = \Api\CommonActions\_getAuthorisedUser();
+        $rows = \Db\smartSelect("SELECT * FROM `vktask2`.`tasks` WHERE `id` = :id AND client_id = :client_id", array(
+            'id' => $_GET['id'],
+            'client_id' => $client['id']
+        ));
+        if (empty($rows)) {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+            return array(
+                '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                'errors' => array(
+                    'id' => \Dictionary\translate('Invalid value')
+                )
+            );
+        } else {
+            $task = $rows[0];
+            if ($task['executor_id'] > 0) {
+                \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+                return array(
+                    '_message' => \Dictionary\translate('Task already exetuted'),
+                );
+            }
+            return $rows[0];
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);

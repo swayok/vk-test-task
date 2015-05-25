@@ -13,7 +13,6 @@ if (empty($_GET['action'])) {
 require_once $srcDir . 'api/api.controller.php';
 
 $action = strtolower($_GET['action']);
-
 try {
     $response = \Api\Controller\runAction($action);
 } catch (Exception $exc) {
@@ -23,7 +22,10 @@ try {
         $response = json_decode($message, true);
     }
     if (empty($response)) {
-        $response = array('_message' => $exc->getMessage());
+        $response = array(
+            '_message' => $exc->getMessage(),
+            '_exception_info' => array('file' => $exc->getFile(), 'line' => $exc->getLine())
+        );
     }
 }
 

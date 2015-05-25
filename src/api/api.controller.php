@@ -51,7 +51,7 @@ function runAction($action) {
                 $allowedActions += array(
                     'get-task' => '\Api\ClientActions\getTask',
                     'add-task' => '\Api\ClientActions\addTask',
-                    'edit-task' => '\Api\ClientActions\editTask',
+                    'update-task' => '\Api\ClientActions\updateTask',
                     'client-tasks-list' => '\Api\ClientActions\tasksList',
                     'client-tasks-list-info' => '\Api\ClientActions\tasksListInfo',
                 );
@@ -65,7 +65,7 @@ function runAction($action) {
                 );
                 break;
             default:
-                throw new \Exception("'Unknown role [{$currentUser['role']}]'");
+                throw new \Exception("Unknown role [{$currentUser['role']}]");
         }
     }
 
@@ -74,7 +74,14 @@ function runAction($action) {
     }
 
     Utils\setHttpCode(Utils\HTTP_CODE_OK);
-    return $allowedActions[$action]();
+    $ret = $allowedActions[$action]();
+    if (!is_array($ret)) {
+        $ret = array(
+            '_message' => \Dictionary\translate('API action returned invalid response'),
+            'errors' => array('response' => $ret)
+        );
+    }
+    return $ret;
 }
 
 function terminateUnauthorisedRequest() {

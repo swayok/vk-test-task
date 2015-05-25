@@ -58,24 +58,28 @@
             {{?}}
             <td>{{=item.executor_id || ''}}</td>
             <td class="actions">
-                <a data-route="client-task-edit" data-args="id={{=item.id}}"
-                   class="edit-link btn btn-primary btn-sm" href="javascript:void(0)">
-                    <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
-                    <?php echo \Dictionary\translate('Edit'); ?>
-                </a>
-                {{? item.is_active == 1 }}
-                    <a data-api-action="update-executor" data-args="id={{=item.id}}&is_active=0" data-method="post"
-                       class="deactivate-link btn btn-danger btn-sm" href="javascript:void(0)">
-                        <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
-                        <?php echo \Dictionary\translate('Deactivate'); ?>
+                {{? !item.executor_id }}
+                    <a data-route="client-task-edit" data-args="id={{=item.id}}"
+                       class="edit-link btn btn-primary btn-sm" href="javascript:void(0)">
+                        <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                        <?php echo \Dictionary\translate('Edit'); ?>
                     </a>
-                {{?}}
-                {{? item.is_active == 0 }}
-                    <a data-api-action="update-executor" data-args="id={{=item.id}}&is_active=1" data-method="post"
-                       class="activate-link btn btn-success btn-sm" href="javascript:void(0)">
-                        <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
-                        <?php echo \Dictionary\translate('Activate'); ?>
-                    </a>
+                    {{? item.is_active == 1 }}
+                        <a data-api-action="update-task" data-args="id={{=item.id}}&is_active=0" data-method="post"
+                           class="deactivate-link btn btn-danger btn-sm" href="javascript:void(0)">
+                            <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+                            <?php echo \Dictionary\translate('Deactivate'); ?>
+                        </a>
+                    {{?}}
+                    {{? item.is_active == 0 }}
+                        <a data-api-action="update-task" data-args="id={{=item.id}}&is_active=1" data-method="post"
+                           class="activate-link btn btn-success btn-sm" href="javascript:void(0)">
+                            <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
+                            <?php echo \Dictionary\translate('Activate'); ?>
+                        </a>
+                    {{?}}
+                {{??}}
+                    &nbsp;
                 {{?}}
             </td>
         </tr>

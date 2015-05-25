@@ -315,9 +315,9 @@ AppComponents.adminDataGridApplyEventHandlers = function (dataSourceApiAction) {
                     AppComponents.setMessage(json._message, 'success');
                 }
                 AppComponents.adminLoadUsers(dataSourceApiAction, false, true);
-            }).fail(function () {
+            }).fail(function (xhr) {
                 if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-                    App.setErrorMessageFromXhr(xhr);
+                    AppComponents.setErrorMessageFromXhr(xhr);
                 }
             }).always(function () {
                 AppComponents.dataGrid.tableContainer.removeClass('loading');

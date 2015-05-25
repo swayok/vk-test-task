@@ -28,9 +28,10 @@
                        id="task-payment" class="form-control">
                 <span class="input-group-addon" id="email-addon"><?php echo \Dictionary\translate('RUB'); ?></span>
             </div>
-            <div class="input-comment">
-                <?php echo str_ireplace(':value', MIN_TASK_PAYMENT, \Dictionary\translate('Minimal payment is :value RUB')); ?>
-            </div>
+        </div>
+        <div class="input-comment">
+            <span class="glyphicon glyphicon-info-sign"></span>
+            <?php echo str_ireplace(':value', MIN_TASK_PAYMENT, \Dictionary\translate('Minimal payment is :value RUB')); ?>
         </div>
         <div class="checkbox">
             <input name="is_active" type="hidden" id="_task-is-active" value="0">

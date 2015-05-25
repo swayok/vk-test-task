@@ -89,6 +89,8 @@ $__TRANSLATIONS = array(
     'Task info' => 'Задание',
     'Waiting' => 'Ожидание',
     'Executed' => 'Выполнено',
+    'Task already exetuted' => 'Задание уже выполнено',
+    'Enter payment for execution' => 'Укажите оплату за выполнение'
 );
 
 function translate($string) {
