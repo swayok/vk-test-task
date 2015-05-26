@@ -151,8 +151,8 @@ function assertValidationErrors($receivedData, $invalidFields = array()) {
         assertErrorCode(\Utils\HTTP_CODE_INVALID)
         && assertHasKeys($receivedData, array('errors'), false)
         && (
-            assertHasKeys($receivedData['errors'], $invalidFields)
-            || assertHasKeys($receivedData['errors'],array_keys($invalidFields))
+            assertHasKeys($receivedData['errors'], array_keys($invalidFields))
+            || assertHasKeys($receivedData['errors'], $invalidFields)
         )
     );
     if ($success) {

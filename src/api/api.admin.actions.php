@@ -244,17 +244,18 @@ function usersList($role, array $fields) {
             'required' => false,
             'type' => 'id',
             'convert' => true,
+            'default' => 1,
             'messages' => array(
                 'type' => \Dictionary\translate('Invalid value'),
             )
         ),
     ));
 
-    $offset = (empty($errors) || empty($errors['page'])) ? ($_GET['page'] - 1) * DATA_GRID_ITEMS_PER_PAGE : 0;
     $mainFeilds = '`t`.`' . implode('`,`t`.`', $fields) . '`';
     $adminCreatorFields = '`j`.`id` as `creator_id`, `j`.`email` as `creator_email`';
     $join = 'LEFT JOIN `vktask1`.`admins` as `j` ON `t`.`created_by` = `j`.id';
     $where = '';
+    $offset = (empty($errors) || empty($errors['page'])) ? ($_GET['page'] - 1) * DATA_GRID_ITEMS_PER_PAGE : 0;
     $options = 'ORDER BY `t`.`created_at` DESC LIMIT ' . DATA_GRID_ITEMS_PER_PAGE . ' OFFSET ' . $offset;
     $records = \Db\select("SELECT {$mainFeilds}, {$adminCreatorFields} FROM `vktask1`.`{$role}s` as `t` $join $where $options");
     return $records;

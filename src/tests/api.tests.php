@@ -6,12 +6,50 @@ require_once __DIR__ . '/../lib/test.tools.php';
 require_once __DIR__ . '/../configs/databases.php';
 require_once __DIR__ . '/../api/api.controller.php';
 require_once __DIR__ . '/../api/api.admin.actions.php';
+require_once __DIR__ . '/../api/api.client.actions.php';
+require_once __DIR__ . '/../api/api.executor.actions.php';
 
 function getTestsList() {
     return array(
         'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
-        'Creating users and Login' => __NAMESPACE__ . '\createUsersAndLogin'
+        'Admin: Users management, authorisation and data retrieving' => __NAMESPACE__ . '\usersManagementAndDataRetrieving',
+        'Client: Tasks management and data retrieving' => __NAMESPACE__ . '\clientTasksManagementAndDataRetrieving',
+//        'Executor: Tasks execution and data retrieving' => __NAMESPACE__ . '\executorTasksManagementAndDataRetrieving'
     );
+}
+
+$_TEST_USERS = array();
+
+function getTestUser($role) {
+    $email = 'user_for_tests@test.com';
+    if (empty($GLOBALS['_TEST_USERS'][$role])) {
+        $table = "`vktask1`.`{$role}s`";
+        $rows = \Db\smartSelect(
+            "SELECT `id`, `email`, `is_active` FROM $table WHERE `email` = :email",
+            array('email' => $email)
+        );
+        if (empty($rows)) {
+            $user = \Db\insert(array(
+                'email' => $email,
+                'password' => \Utils\hashPassword('l9DFhc1cXHSot4OkxZj1'),
+                'is_active' => true
+            ), $table);
+            if (empty($user)) {
+                throw new \Exception('Unable to insert test user to DB');
+            }
+        } else {
+            $user = $rows[0];
+            if ($user['is_active'] == '0') {
+                $success = \Db\query("UPDATE $table SET `is_active` = 1 WHERE `id` = {$user['id']}");
+                if (!$success) {
+                    throw new \Exception('Unable to activate test user');
+                }
+            }
+        }
+        $user['role'] = $role;
+        $GLOBALS['_TEST_USERS'][$role] = $user;
+    }
+    return $GLOBALS['_TEST_USERS'][$role];
 }
 
 function loginStatus() {
@@ -123,7 +161,7 @@ function _testIsAuthorisedAs($client = false, $executor = false, $admin = false)
     \TestTools\addTestResult($code . ' / is authorised as admin: ' . ($admin ? 'true' : 'false'), $success, $response);
 }
 
-function createUsersAndLogin() {
+function usersManagementAndDataRetrieving() {
     \TestTools\cleanTestResults();
     \Api\CommonActions\_unsetAuthorisation();
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
@@ -145,13 +183,7 @@ function createUsersAndLogin() {
     }
 
     // get admin account to be able create test users
-    $admin = \Db\select('SELECT * FROM `vktask1`.`admins` LIMIT 1');
-    if (empty($admin)) {
-        \TestTools\addTestResult('select admin user', false, 'No admins in DB');
-        return \TestTools\getTestResults(true);
-    }
-    $admin = $admin[0];
-    $admin['role'] = 'admin';
+    $admin = getTestUser('admin');
     \Api\CommonActions\_setAuthorisedUser($admin);
     $validUser = array(
         'email' => 'testuser' . time() . '@test.com',
@@ -225,9 +257,7 @@ function createUsersAndLogin() {
     );
     \TestTools\addTestResult('login: invalid values', $success, $response);
 
-    // users creation, login, deactivation, get data, get lists and lists info
-
-    // todo: add tests for [get data, get lists and lists info]
+    // users creation, login, deactivation, get single user data, get list of users and lists info
 
     $done = _testUserRole('client', $validUser, $admin);
     if (!$done) {
@@ -249,9 +279,17 @@ function createUsersAndLogin() {
 
 function _testUserRole($role, $validUser, $admin) {
     $validUser['password'] .= $role;
+
     $ucRole = ucfirst($role);
     $addUserFn = "Api\\AdminActions\\add{$ucRole}";
     $updateUserFn = "Api\\AdminActions\\update{$ucRole}";
+    $getUserFn = "Api\\AdminActions\\get{$ucRole}";
+    $usersListFn = "Api\\AdminActions\\{$role}sList";
+    $usersListInfoFn = "Api\\AdminActions\\{$role}sListInfo";
+
+    $GLOBALS['__REQUEST_INFO']['isPost'] = true;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = false;
+
     $_POST = $validUser;
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $response = $addUserFn();
@@ -376,6 +414,426 @@ function _testUserRole($role, $validUser, $admin) {
     \TestTools\addTestResult("deactivated $role login", $success, $response);
     \Api\CommonActions\_setAuthorisedUser($admin);
 
+    $_POST = array(
+        'id' => $userId,
+        'is_active' => '1'
+    );
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $response = $updateUserFn();
+    $success = (
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active', '_message'))
+        && \TestTools\assertEquals($response['email'], $validUser['email'])
+        && \TestTools\assertEquals($response['id'], $userId)
+        && \TestTools\assertEquals($response['is_active'], '1')
+    );
+    \TestTools\addTestResult("$role activation", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $_POST = array();
+    try {
+        $response = $getUserFn();
+        \TestTools\addTestResult("$role get data: POST request (exception)", false, 'Exception expected');
+    } catch (\Exception $exc) {
+        $success = (
+            \TestTools\assertEquals($exc->getCode(), \Utils\HTTP_CODE_NOT_FOUND)
+        );
+        \TestTools\addTestResult("$role get data: POST request (exception)", $success, $response);
+    }
+
+    $GLOBALS['__REQUEST_INFO']['isPost'] = false;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = true;
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = $getUserFn();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+    );
+    \TestTools\addTestResult("$role get data: no id passed", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => '-1');
+    $response = $getUserFn();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+    );
+    \TestTools\addTestResult("$role get data: invalid id passed", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => $userId);
+    $response = $getUserFn();
+    $success = (
+        \TestTools\assertHasKeys($response, array('id', 'email', 'is_active'))
+        && \TestTools\assertEquals($response['email'], $validUser['email'])
+        && \TestTools\assertEquals($response['id'], $userId)
+        && \TestTools\assertEquals($response['is_active'], '1')
+    );
+    \TestTools\addTestResult("$role get data", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = $usersListFn();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], array('id', 'email', 'is_active'), false)
+    );
+    \TestTools\addTestResult("$role get records list: without page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '-1');
+    $response = $usersListFn();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], array('id', 'email', 'is_active'), false)
+    );
+    \TestTools\addTestResult("$role get records list: with invalid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '2');
+    $response = $usersListFn();
+    $success = (
+        \TestTools\assertEquals(count($response), 0)
+        || (
+            \TestTools\assertHasKeys($response, array(0), false)
+            && \TestTools\assertHasKeys($response[0], array('id', 'email', 'is_active'), false)
+        )
+    );
+    \TestTools\addTestResult("$role get records list: with valid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = $usersListInfoFn();
+    $success = (
+        \TestTools\assertHasKeys($response, array('total', 'pages', 'items_per_page'))
+        && \TestTools\assertEquals($response['total'] > 0, true)
+        && \TestTools\assertEquals($response['pages'] > 0, true)
+        && \TestTools\assertEquals($response['items_per_page'] > 0, true)
+    );
+    \TestTools\addTestResult("$role get records list info", $success, $response);
+
     \Db\query("DELETE FROM `vktask1`.`{$role}s` WHERE `email` LIKE 'testuser%@test.com'");
     return true;
+}
+
+function clientTasksManagementAndDataRetrieving() {
+    \TestTools\cleanTestResults();
+    \Api\CommonActions\_unsetAuthorisation();
+    $GLOBALS['__REQUEST_INFO']['isPost'] = true;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = false;
+
+    try {
+        $response = \Api\ClientActions\addTask();
+        \TestTools\addTestResult('client not logged in: exception', false, $response);
+    } catch (\Exception $exc) {
+        $success = (
+            \TestTools\assertEquals($exc->getCode(), 401)
+            && \TestTools\assertHasKeys(json_decode($exc->getMessage(), true), array('_message', '_route'))
+        );
+        \TestTools\addTestResult('client not logged in: exception', $success, array(
+            'message' => $exc->getMessage(),
+            'exc' => $exc->getCode(),
+            'trace' => $exc->getTraceAsString()
+        ));
+    }
+
+    // get admin account to be able create test users
+    $client = getTestUser('client');
+    \Api\CommonActions\_setAuthorisedUser($client);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array();
+    $response = \Api\ClientActions\addTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('title', 'description', 'payment'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task creation: empty post data', $success, $response);
+
+    $_POST = array(
+        'title' => '',
+        'description' => '',
+        'payment' => '',
+        'is_active' => ''
+    );
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $response = \Api\ClientActions\addTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('title', 'description', 'payment'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task creation: empty values', $success, $response);
+
+    $_POST = array(
+        'title' => 'qq',
+        'description' => 'qq',
+        'payment' => 'qq',
+        'is_active' => 'false'
+    );
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $response = \Api\ClientActions\addTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('payment', 'is_active'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task creation: invalid values', $success, $response);
+
+    $validTask = array(
+        'title' => 'Test task',
+        'description' => '@testtask. Do not execute',
+        'payment' => number_format(MIN_TASK_PAYMENT, 2, '.', ''),
+        'is_active' => '1'
+    );
+    $responseFields = array('id', 'title', 'description', 'payment', 'is_active', '_message');
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = $validTask;
+    $_POST['payment'] /= 2;
+    $response = \Api\ClientActions\addTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('payment'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task creation: payment is too low', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = $validTask;
+    $response = \Api\ClientActions\addTask();
+    $success = (
+        \TestTools\assertHasKeys($response, $responseFields)
+        && \TestTools\assertEquals($response['title'], $validTask['title'])
+        && \TestTools\assertEquals($response['description'], $validTask['description'])
+        && \TestTools\assertEquals($response['payment'], $validTask['payment'])
+        && \TestTools\assertEquals($response['is_active'], $validTask['is_active'])
+    );
+    \TestTools\addTestResult('task creation', $success, $response);
+    if (!$success) {
+        return false;
+    }
+    $taskId = $response['id'];
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array();
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task update: empty post data', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => '',
+        'title' => 'www'
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task update: empty id', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => '-1',
+        'title' => 'www'
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task update: invalid id', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $taskId,
+        'payment' => ''
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+        \TestTools\assertErrorCode(400)
+        && \TestTools\assertHasKeys($response, array('_message'))
+    );
+    \TestTools\addTestResult('task update: no data to update', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $taskId,
+        'title' => $validTask['title'] . 'www',
+        'description' => $validTask['description'] . 'www',
+        'payment' => '0',
+        'is_active' => 'true'
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('payment', 'is_active'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task update: invalid field values', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $taskId,
+        'title' => $validTask['title'] . 'www',
+        'description' => $validTask['description'] . 'www',
+        'payment' => $validTask['payment'] / 2,
+        'is_active' => '1'
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('payment'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('task update: too low payment', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $taskId,
+        'title' => $validTask['title'] . 'www',
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+       \TestTools\assertHasKeys($response, $responseFields)
+        && \TestTools\assertEquals($response['title'], $_POST['title'])
+        && \TestTools\assertEquals($response['description'], $validTask['description'])
+        && \TestTools\assertEquals($response['payment'], $validTask['payment'])
+        && \TestTools\assertEquals($response['is_active'], $validTask['is_active'])
+    );
+    \TestTools\addTestResult('task update: only title', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $taskId,
+        'title' => $validTask['title'] . 'wwwww',
+        'description' => $validTask['description'] . 'www',
+        'payment' => number_format(floatval($validTask['payment']) * 2.00, 2, '.', ''),
+        'is_active' => '0'
+    );
+    $response = \Api\ClientActions\updateTask();
+    $success = (
+       \TestTools\assertHasKeys($response, $responseFields)
+        && \TestTools\assertEquals($response['title'], $_POST['title'])
+        && \TestTools\assertEquals($response['description'], $_POST['description'])
+        && \TestTools\assertEquals(floatval($response['payment']), floatval($_POST['payment']))
+        && \TestTools\assertEquals($response['is_active'], '0')
+    );
+    \TestTools\addTestResult('task update: all fields', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $executor = getTestUser('executor');
+    $success = \Db\query('UPDATE `vktask2`.`tasks` ' .
+        "SET `executor_id` = {$executor['id']}, `executed_at` = NOW() WHERE `id` = $taskId"
+    );
+    \TestTools\addTestResult('task update query: set executor_id', $success, \Db\getLastQuery());
+    if ($success) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+        $_POST = array(
+            'id' => $taskId,
+            'title' => $validTask['title'] . 'wwwqqq',
+        );
+        $response = \Api\ClientActions\updateTask();
+        $success = (
+            \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
+            && \TestTools\assertHasKeys($response, array('_message'))
+        );
+        \TestTools\addTestResult('executed task update attempt', $success, $response);
+
+    }
+    
+    $GLOBALS['__REQUEST_INFO']['isPost'] = false;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = true;
+    $_POST = array();
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ClientActions\getTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+    );
+    \TestTools\addTestResult("tast get data: no id passed", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => '-1');
+    $response = \Api\ClientActions\getTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+    );
+    \TestTools\addTestResult("get task data: invalid id passed", $success, $response);
+
+    $responseFields = array(
+        'id', 'title', 'description', 'payment', 'client_id',
+        'is_active', 'executor_id', 'created_at', 'executed_at'
+    );
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => $taskId);
+    $response = \Api\ClientActions\getTask();
+    $success = (
+        \TestTools\assertHasKeys($response, $responseFields)
+        && \TestTools\assertEquals($response['id'], $taskId)
+        && \TestTools\assertEquals($response['is_active'], '0')
+        && \TestTools\assertEquals($response['client_id'], $client['id'])
+    );
+    \TestTools\addTestResult("get task data", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => $taskId, 'not_executed' => '1');
+    $response = \Api\ClientActions\getTask();
+    $success = (
+        \TestTools\assertErrorCode(\Utils\HTTP_CODE_INVALID)
+        && \TestTools\assertHasKeys($response, array('_message'))
+    );
+    \TestTools\addTestResult("try to get executed task data", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ClientActions\tasksList();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], $responseFields, false)
+    );
+    if ($success) {
+        foreach ($response as $task) {
+            $success = \TestTools\assertEquals($task['client_id'], $client['id']);
+        }
+    }
+    \TestTools\addTestResult("get client tasks list: without page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '-1');
+    $response = \Api\ClientActions\tasksList();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], $responseFields, false)
+    );
+    \TestTools\addTestResult("get client tasks list: with invalid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '2');
+    $response = \Api\ClientActions\tasksList();
+    $success = (
+        \TestTools\assertEquals(count($response), 0)
+        || (
+            \TestTools\assertHasKeys($response, array(0), false)
+            && \TestTools\assertHasKeys($response[0], $responseFields, false)
+        )
+    );
+    \TestTools\addTestResult("get client tasks list: with valid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ClientActions\tasksListInfo();
+    $success = (
+        \TestTools\assertHasKeys($response, array('total', 'pages', 'items_per_page'))
+        && \TestTools\assertEquals($response['total'] > 0, true)
+        && \TestTools\assertEquals($response['pages'] > 0, true)
+        && \TestTools\assertEquals($response['items_per_page'] > 0, true)
+    );
+    \TestTools\addTestResult("get client tasks list info", $success, $response);
+
+    \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `title` LIKE '@testtask%'");
+
+    return \TestTools\getTestResults(true);
 }

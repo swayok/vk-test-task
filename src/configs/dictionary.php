@@ -98,7 +98,9 @@ $__TRANSLATIONS = array(
     'There is no pending tasks yet' => 'Пока нет доступных заданий',
     'There is no executed tasks yet' => 'Вы не выполнили еще ни одного задания',
     'Task have been already executed' => 'Задание уже выполнено',
-    'Task executed successfully' => 'Задание успешно выполнено'
+    'Task executed successfully' => 'Задание успешно выполнено',
+    'Enter title' => 'Введите название',
+    'Enter description' => 'Введите описание',
 );
 
 function translate($string) {

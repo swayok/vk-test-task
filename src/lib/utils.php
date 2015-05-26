@@ -21,6 +21,9 @@ function setHttpCode($httpCode) {
 }
 
 function terminate($httpCode, array $response = array()) {
+    if (empty($response)) {
+        $response = array('_http_code' => $httpCode);
+    }
     throw new \Exception(json_encode($response, JSON_UNESCAPED_UNICODE), $httpCode);
 }
 
@@ -54,10 +57,10 @@ function validateData(array &$data, array $validators) {
     $errors = array();
     foreach ($validators as $key => $validator) {
         $validator = array_replace_recursive($defaults, $validator);
-        if ($validator['required'] && (!array_key_exists($key, $data) || isEmptyValue($data[$key]))) {
+        $keyExists = array_key_exists($key, $data);
+        if ($validator['required'] && (!$keyExists || isEmptyValue($data[$key]))) {
             $errors[$key] = $validator['messages']['required'];
         } else {
-            $keyExists = array_key_exists($key, $data);
             if ((!$keyExists || $data[$key] === '') && array_key_exists('default', $validator)) {
                 $data[$key] = $validator['default'];
             }

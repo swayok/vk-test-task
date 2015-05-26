@@ -2,11 +2,11 @@
 
 namespace Api\ExecutorActions;
 
-function getPendingTasks() {
+function pendingTasks() {
     return _tasksList('`executor_id` is NULL', 'created_at');
 }
 
-function getExecutedTasks() {
+function executedTasks() {
     return _tasksList('`executor_id` = :id', 'executed_at');
 }
 
@@ -44,11 +44,11 @@ function _tasksList($conditions, $orderByColumn) {
     return $records;
 }
 
-function getPendingTasksInfo() {
+function pendingTasksInfo() {
     return _tasksListInfo('`executor_id` IS NULL');
 }
 
-function getExecutedTasksInfo() {
+function executedTasksInfo() {
     return _tasksListInfo('`executor_id` = :id');
 }
 

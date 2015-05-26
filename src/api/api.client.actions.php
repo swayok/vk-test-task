@@ -57,8 +57,9 @@ function addTask() {
     try {
         $task = \Db\insert($task, '`vktask2`.`tasks`');
         if (!empty($task)) {
-            $user['_message'] = \Dictionary\translate('Task created successfully');
-            return $user;
+            $task = array_intersect_key($task, $validators + array('id' => ''));
+            $task['_message'] = \Dictionary\translate('Task created successfully');
+            return $task;
         } else {
             \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
             return array('_message' => \Dictionary\translate('Failed to save data to DB'));
@@ -121,7 +122,7 @@ function updateTask () {
         )
     );
     $errors = \Utils\validateData($_POST, $validators);
-    if (empty($errors['payment']) && !empty($_POST['payment']) && $_POST['payment'] < MIN_TASK_PAYMENT) {
+    if (empty($errors['payment']) && array_key_exists('payment', $_POST) && $_POST['payment'] < MIN_TASK_PAYMENT) {
         $errors['payment'] = str_ireplace(':value', MIN_TASK_PAYMENT, \Dictionary\translate('Minimal payment is :value RUB'));
     }
     if (!empty($errors)) {
@@ -137,8 +138,11 @@ function updateTask () {
 
     try {
         $client = \Api\CommonActions\_getAuthorisedUser();
-        $query = "SELECT COUNT(*) as cnt FROM `vktask2`.`tasks` WHERE `id` = :id AND `client_id` = :client_id";
-        if (!\Db\selectValue($query, array('id' => $_POST['id'], 'client_id' => $client['id']))) {
+        $rows = \Db\smartSelect(
+            "SELECT `id`, `executor_id` FROM `vktask2`.`tasks` WHERE `id` = :id AND `client_id` = :client_id",
+            array('id' => $_POST['id'], 'client_id' => $client['id'])
+        );
+        if (empty($rows)) {
             \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
             return array(
                 '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
@@ -146,9 +150,15 @@ function updateTask () {
                     'id' => \Dictionary\translate('Invalid value')
                 )
             );
+        } else if ($rows[0]['executor_id'] > 0) {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+            return array(
+                '_message' => \Dictionary\translate('Task have been already executed'),
+            );
         }
         $task = \Db\updateById($dataToUpdate, '`vktask2`.`tasks`', $_POST['id']);
         if (!empty($task)) {
+            $task = array_intersect_key($task, $validators);
             $task['_message'] = \Dictionary\translate('Task updated successfully');
             return $task;
         } else {
@@ -208,13 +218,18 @@ function getTask() {
             );
         } else {
             $task = $rows[0];
-            if ($task['executor_id'] > 0) {
+            if (!empty($_GET['not_executed']) && $task['executor_id'] > 0) {
                 \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
                 return array(
                     '_message' => \Dictionary\translate('Task already exetuted'),
                 );
             }
-            return $rows[0];
+            $fields = array_flip(array(
+                'id', 'title', 'description', 'payment', 'client_id',
+                'is_active', 'executor_id', 'created_at', 'executed_at'
+            ));
+            $task = array_intersect_key($task, $fields);
+            return $task;
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
@@ -234,6 +249,7 @@ function tasksList() {
             'required' => false,
             'type' => 'id',
             'convert' => true,
+            'default' => 1,
             'messages' => array(
                 'type' => \Dictionary\translate('Invalid value'),
             )
@@ -241,12 +257,17 @@ function tasksList() {
     ));
 
     $client = \Api\CommonActions\_getAuthorisedUser();
-    $offset = (empty($errors) || empty($errors['page'])) ? ($_GET['page'] - 1) * DATA_GRID_ITEMS_PER_PAGE : 0;
+    $fields = array(
+        'id', 'title', 'description', 'payment', 'client_id',
+        'is_active', 'executor_id', 'created_at', 'executed_at'
+    );
+    $fields = '`t`.`' . implode('`, `t`.`', $fields) . '`';
     $executorFields = '`j`.`email` as `executor_email`';
     $join = 'LEFT JOIN `vktask1`.`executors` as `j` ON `t`.`executor_id` = `j`.id';
     $where = 'WHERE `client_id` = :id';
+    $offset = (empty($errors) || empty($errors['page'])) ? ($_GET['page'] - 1) * DATA_GRID_ITEMS_PER_PAGE : 0;
     $options = 'ORDER BY `t`.`created_at` DESC LIMIT ' . DATA_GRID_ITEMS_PER_PAGE . ' OFFSET ' . $offset;
-    $records = \Db\smartSelect("SELECT `t`.*, $executorFields FROM `vktask2`.`tasks` as `t` $join $where $options", $client);
+    $records = \Db\smartSelect("SELECT $fields, $executorFields FROM `vktask2`.`tasks` as `t` $join $where $options", $client);
     return $records;
 }
 
