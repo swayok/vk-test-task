@@ -2,11 +2,11 @@
 
 namespace Api\ExecutorActions;
 
-function pendingTasks() {
+function pendingTasksList() {
     return _tasksList('`executor_id` is NULL', 'created_at');
 }
 
-function executedTasks() {
+function executedTasksList() {
     return _tasksList('`executor_id` = :id', 'executed_at');
 }
 
@@ -22,6 +22,7 @@ function _tasksList($conditions, $orderByColumn) {
             'required' => false,
             'type' => 'id',
             'convert' => true,
+            'default' => 1,
             'messages' => array(
                 'type' => \Dictionary\translate('Invalid value'),
             )
@@ -30,7 +31,7 @@ function _tasksList($conditions, $orderByColumn) {
 
     $executor = \Api\CommonActions\_getAuthorisedUser();
 
-    $fields = array('id', 'title', 'description', 'created_at', 'executed_at', 'paid_to_executor');
+    $fields = array('id', 'title', 'description', 'created_at', 'executed_at', 'paid_to_executor', 'executor_id');
     $executorPaymentRate = 1 - SYSTEM_COMISSION;
     $fields = '`t`.`' . implode('`,`t`.`', $fields) . "`, `payment` * $executorPaymentRate as `payment`";
     $clientFields = '`j`.`email` as `client_email`';
@@ -44,11 +45,11 @@ function _tasksList($conditions, $orderByColumn) {
     return $records;
 }
 
-function pendingTasksInfo() {
+function pendingTasksListInfo() {
     return _tasksListInfo('`executor_id` IS NULL');
 }
 
-function executedTasksInfo() {
+function executedTasksListInfo() {
     return _tasksListInfo('`executor_id` = :id');
 }
 
@@ -100,16 +101,19 @@ function executeTask() {
         }
         $task = $rows[0];
         if (!empty($task['executor_id'])) {
-            \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+            \Utils\setHttpCode(\Utils\HTTP_CODE_CONFLICT);
             return array('_message' => \Dictionary\translate('Task have been already executed'));
         }
         $executor = \Api\CommonActions\_getAuthorisedUser();
+        $paimentToExecutor = floatval($task['payment']) * (1 - SYSTEM_COMISSION);
+        $paimentToExecutor = number_format(floor($paimentToExecutor * 100) / 100, 2, '.', '');
+        $paimentToSystem = number_format(floatval($task['payment']) - $paimentToExecutor, 2, '.', '');
         $dataToUpdate = array(
             'executor_id' => $executor['id'],
             'executed_at' => date('Y-m-d H:i:s'),
-            'paid_to_executor' => floor(floatval($task['payment']) * (1 - SYSTEM_COMISSION) * 100) / 100
+            'paid_to_executor' => $paimentToExecutor,
+            'paid_to_system' => $paimentToSystem
         );
-        $dataToUpdate['paid_to_system'] = floatval($task['payment']) - $dataToUpdate['paid_to_executor'];
         \Db\query('BEGIN');
         $task = \Db\updateById($dataToUpdate, '`vktask2`.`tasks`', $_POST['id']);
         if (!empty($task)) {
@@ -123,10 +127,11 @@ function executeTask() {
                 $balance = \Db\selectValue("SELECT `balance` FROM `vktask1`.`executors` WHERE `id` = {$executor['id']}");
                 $executor['balance'] = $balance;
                 \Api\CommonActions\_setAuthorisedUser($executor);
-                return array(
-                    '_message' => \Dictionary\translate('Task executed successfully'),
-                    'balance' => $balance
-                );
+                $fields = array('id', 'executed_at', 'executor_id', 'paid_to_executor', 'payment');
+                $task = array_intersect_key($task, array_flip($fields));
+                $task['_message'] = \Dictionary\translate('Task executed successfully');
+                $task['balance'] = $balance;
+                return $task;
             }
         }
         \Db\query('ROLLBACK');

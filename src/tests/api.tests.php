@@ -11,10 +11,10 @@ require_once __DIR__ . '/../api/api.executor.actions.php';
 
 function getTestsList() {
     return array(
-        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
-        'Admin: Users management, authorisation and data retrieving' => __NAMESPACE__ . '\usersManagementAndDataRetrieving',
-        'Client: Tasks management and data retrieving' => __NAMESPACE__ . '\clientTasksManagementAndDataRetrieving',
-//        'Executor: Tasks execution and data retrieving' => __NAMESPACE__ . '\executorTasksManagementAndDataRetrieving'
+//        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
+//        'Admin: Users management, authorisation and data retrieving' => __NAMESPACE__ . '\usersManagementAndDataRetrieving',
+//        'Client: Tasks management and data retrieving' => __NAMESPACE__ . '\clientTasksManagementAndDataRetrieving',
+        'Executor: Tasks execution and data retrieving' => __NAMESPACE__ . '\executorTasksManagementAndDataRetrieving'
     );
 }
 
@@ -24,8 +24,12 @@ function getTestUser($role) {
     $email = 'user_for_tests@test.com';
     if (empty($GLOBALS['_TEST_USERS'][$role])) {
         $table = "`vktask1`.`{$role}s`";
+        $fields = '`id`, `email`, `is_active`';
+        if ($role === 'executor') {
+            $fields .= ', `balance`';
+        }
         $rows = \Db\smartSelect(
-            "SELECT `id`, `email`, `is_active` FROM $table WHERE `email` = :email",
+            "SELECT $fields FROM $table WHERE `email` = :email",
             array('email' => $email)
         );
         if (empty($rows)) {
@@ -166,6 +170,8 @@ function usersManagementAndDataRetrieving() {
     \Api\CommonActions\_unsetAuthorisation();
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
     $GLOBALS['__REQUEST_INFO']['isGet'] = false;
+    $_POST = array();
+    $_GET = array();
 
     try {
         $response = \Api\AdminActions\addAdmin();
@@ -182,7 +188,6 @@ function usersManagementAndDataRetrieving() {
         ));
     }
 
-    // get admin account to be able create test users
     $admin = getTestUser('admin');
     \Api\CommonActions\_setAuthorisedUser($admin);
     $validUser = array(
@@ -289,6 +294,7 @@ function _testUserRole($role, $validUser, $admin) {
 
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
     $GLOBALS['__REQUEST_INFO']['isGet'] = false;
+    $_GET = array();
 
     $_POST = $validUser;
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
@@ -443,6 +449,7 @@ function _testUserRole($role, $validUser, $admin) {
 
     $GLOBALS['__REQUEST_INFO']['isPost'] = false;
     $GLOBALS['__REQUEST_INFO']['isGet'] = true;
+    $_POST = array();
 
     \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
     $_GET = array();
@@ -521,6 +528,8 @@ function clientTasksManagementAndDataRetrieving() {
     \Api\CommonActions\_unsetAuthorisation();
     $GLOBALS['__REQUEST_INFO']['isPost'] = true;
     $GLOBALS['__REQUEST_INFO']['isGet'] = false;
+    $_POST = array();
+    $_GET = array();
 
     try {
         $response = \Api\ClientActions\addTask();
@@ -537,7 +546,6 @@ function clientTasksManagementAndDataRetrieving() {
         ));
     }
 
-    // get admin account to be able create test users
     $client = getTestUser('client');
     \Api\CommonActions\_setAuthorisedUser($client);
 
@@ -832,6 +840,223 @@ function clientTasksManagementAndDataRetrieving() {
         && \TestTools\assertEquals($response['items_per_page'] > 0, true)
     );
     \TestTools\addTestResult("get client tasks list info", $success, $response);
+
+    \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `title` LIKE '@testtask%'");
+
+    return \TestTools\getTestResults(true);
+}
+
+function executorTasksManagementAndDataRetrieving() {
+    \TestTools\cleanTestResults();
+    \Api\CommonActions\_unsetAuthorisation();
+
+    $executor = getTestUser('executor');
+    \Api\CommonActions\_setAuthorisedUser($executor);
+
+    $client = getTestUser('client');
+    $pendingTask = array(
+        'title' => 'Test task (pending)',
+        'description' => '@testtask. Do not execute',
+        'payment' => number_format(MIN_TASK_PAYMENT + 0.13, 2, '.', ''),
+        'is_active' => '1',
+        'client_id' => $client['id']
+    );
+    $executedTask = $pendingTask + array('executor_id' => $executor['id'], 'title' => 'Test task (executed)');
+    $table = '`vktask2`.`tasks`';
+    $pendingTask = \Db\insert($pendingTask, $table);
+    if (empty($pendingTask)) {
+        \TestTools\addTestResult("pending task creation", false, \Db\getLastQuery());
+        return \TestTools\getTestResults(true);
+    }
+    $executedTask = \Db\insert($executedTask, $table);
+    if (empty($executedTask)) {
+        \TestTools\addTestResult("executed task creation", false, \Db\getLastQuery());
+        return \TestTools\getTestResults(true);
+    }
+
+    $GLOBALS['__REQUEST_INFO']['isPost'] = false;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = true;
+    $_POST = array();
+    $_GET = array();
+
+    $responseFields = array(
+        'id', 'title', 'description', 'client_email', 'executor_id',
+        'created_at', 'executed_at', 'paid_to_executor', 'payment'
+    );
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ExecutorActions\pendingTasksList();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], $responseFields, false)
+    );
+    if ($success) {
+        foreach ($response as $task) {
+            $success = \TestTools\assertEquals($task['executor_id'], null);
+        }
+    }
+    \TestTools\addTestResult("get pending tasks list: without page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ExecutorActions\executedTasksList();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], $responseFields, false)
+    );
+    if ($success) {
+        foreach ($response as $task) {
+            $success = \TestTools\assertEquals($task['executor_id'], $executor['id']);
+        }
+    }
+    \TestTools\addTestResult("get executed tasks list: without page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '-1');
+    $response = \Api\ExecutorActions\pendingTasksList();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], $responseFields, false)
+    );
+    \TestTools\addTestResult("get pending tasks list: with invalid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '-1');
+    $response = \Api\ExecutorActions\executedTasksList();
+    $success = (
+        \TestTools\assertHasKeys($response, array(0), false)
+        && \TestTools\assertHasKeys($response[0], $responseFields, false)
+    );
+    \TestTools\addTestResult("get executed tasks list: with invalid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '2');
+    $response = \Api\ExecutorActions\pendingTasksList();
+    $success = (
+        \TestTools\assertEquals(count($response), 0)
+        || (
+            \TestTools\assertHasKeys($response, array(0), false)
+            && \TestTools\assertHasKeys($response[0], $responseFields, false)
+        )
+    );
+    \TestTools\addTestResult("get pending tasks list: with valid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('page' => '2');
+    $response = \Api\ExecutorActions\executedTasksList();
+    $success = (
+        \TestTools\assertEquals(count($response), 0)
+        || (
+            \TestTools\assertHasKeys($response, array(0), false)
+            && \TestTools\assertHasKeys($response[0], $responseFields, false)
+        )
+    );
+    \TestTools\addTestResult("get executed tasks list: with valid page argument", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ExecutorActions\pendingTasksListInfo();
+    $success = (
+        \TestTools\assertHasKeys($response, array('total', 'pages', 'items_per_page'))
+        && \TestTools\assertEquals($response['total'] > 0, true)
+        && \TestTools\assertEquals($response['pages'] > 0, true)
+        && \TestTools\assertEquals($response['items_per_page'] > 0, true)
+    );
+    \TestTools\addTestResult("get pending tasks list info", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ExecutorActions\executedTasksListInfo();
+    $success = (
+        \TestTools\assertHasKeys($response, array('total', 'pages', 'items_per_page'))
+        && \TestTools\assertEquals($response['total'] > 0, true)
+        && \TestTools\assertEquals($response['pages'] > 0, true)
+        && \TestTools\assertEquals($response['items_per_page'] > 0, true)
+    );
+    \TestTools\addTestResult("get executed tasks list info", $success, $response);
+
+    $GLOBALS['__REQUEST_INFO']['isPost'] = true;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = false;
+    $_GET = array();
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array();
+    $response = \Api\ExecutorActions\executeTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('execute task: empty post data', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => '',
+    );
+    $response = \Api\ExecutorActions\executeTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('execute task: empty id', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => '-1',
+    );
+    $response = \Api\ExecutorActions\executeTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult('execute task: invalid id', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $executedTask['id'],
+    );
+    $response = \Api\ExecutorActions\executeTask();
+    $success = (
+        \TestTools\assertErrorCode(\Utils\HTTP_CODE_CONFLICT)
+        && \TestTools\assertHasKeys($response, array('_message'))
+    );
+    \TestTools\addTestResult('execute task: already executed', $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_POST = array(
+        'id' => $pendingTask['id'],
+    );
+    $shouldBePaidToExecutor = floor(floatval($pendingTask['payment']) * (1 - SYSTEM_COMISSION) * 100) / 100;
+    $shouldBePaidToExecutor = number_format($shouldBePaidToExecutor, 2, '.', '');
+    $shouldBePaidToSystem = number_format(floatval($pendingTask['payment']) - $shouldBePaidToExecutor, 2, '.', '');
+    $response = \Api\ExecutorActions\executeTask();
+    $responseFields = array('id', 'executor_id', 'executed_at', 'paid_to_executor', 'payment', 'balance', '_message');
+    $success = (
+       \TestTools\assertHasKeys($response, $responseFields)
+        && \TestTools\assertEquals($response['id'], $pendingTask['id'])
+        && \TestTools\assertEquals($response['executor_id'], $executor['id'])
+        && \TestTools\assertEquals($response['payment'], $pendingTask['payment'])
+        && \TestTools\assertEquals(
+            number_format(floatval($response['paid_to_executor']), 2, '.', ''),
+            $shouldBePaidToExecutor
+        )
+        && \TestTools\assertEquals(
+            number_format(floatval($response['balance']), 2, '.', ''),
+            number_format(floatval($executor['balance']) + floatval($shouldBePaidToExecutor), 2, '.', '')
+        )
+    );
+    \TestTools\addTestResult('execute task', $success, $response);
+
+    $rows = \Db\select("SELECT `paid_to_system` FROM $table WHERE `id` = {$pendingTask['id']}");
+    $success = (
+        \TestTools\assertEquals(empty($rows), false)
+        && \TestTools\assertHasKeys($rows, array(0))
+        && \TestTools\assertHasKeys($rows[0], array('paid_to_system'))
+        && \TestTools\assertEquals(
+            number_format(floatval($rows[0]['paid_to_system']), 2, '.', ''),
+            $shouldBePaidToSystem
+        )
+    );
+    \TestTools\addTestResult('executed task payment to system', $success, $response);
 
     \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `title` LIKE '@testtask%'");
 

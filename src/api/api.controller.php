@@ -59,10 +59,10 @@ function runAction($action) {
             case 'executor':
                 require_once 'api.executor.actions.php';
                 $allowedActions += array(
-                    'pending-tasks-list' => '\Api\ExecutorActions\pendingTasks',
-                    'pending-tasks-list-info' => '\Api\ExecutorActions\pendingTasksInfo',
-                    'executed-tasks-list' => '\Api\ExecutorActions\executedTasks',
-                    'executed-tasks-list-info' => '\Api\ExecutorActions\executedTasksInfo',
+                    'pending-tasks-list' => '\Api\ExecutorActions\pendingTasksList',
+                    'pending-tasks-list-info' => '\Api\ExecutorActions\pendingTasksListInfo',
+                    'executed-tasks-list' => '\Api\ExecutorActions\executedTasksList',
+                    'executed-tasks-list-info' => '\Api\ExecutorActions\executedTasksListInfo',
                     'execute-task' => '\Api\ExecutorActions\executeTask',
                 );
                 break;
