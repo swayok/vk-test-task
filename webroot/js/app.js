@@ -198,15 +198,13 @@ App._loadViewForRoute = function (route, routeInfo) {
         routeInfo.controller(template, false);
     }).fail(function (xhr) {
         App.isLoading(false);
-        if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-            AppComponents.setErrorMessageFromXhr(xhr);
-        }
+        App.handleAjaxFail(xhr)
     });
 };
 
 App.isLoading = function (yes) {
     if (yes || typeof yes === 'undefined') {
-        App.container.addClass('loading');
+        App.container.addClass('has-loader loading');
     } else {
         setTimeout(function () {
             App.container.removeClass('loading');
@@ -244,3 +242,8 @@ App.isNotInternalServerError = function (xhr) {
     return true;
 };
 
+App.handleAjaxFail = function (xhr) {
+    if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
+        AppComponents.setErrorMessageFromXhr(xhr);
+    }
+};

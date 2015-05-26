@@ -27,7 +27,7 @@ $__TRANSLATIONS = array(
     'OES' => 'СВЗ',
     'System management' => 'Управление системой',
     'Toggle navigation' => 'Показать/скрыть меню',
-    'Dashboard' => 'Состояние системы',
+    'System Stats' => 'Статистика системы',
     'Clients' => 'Заказчики',
     'Executors' => 'Исполнители',
     'Admins' => 'Администраторы',
@@ -101,6 +101,13 @@ $__TRANSLATIONS = array(
     'Task executed successfully' => 'Задание успешно выполнено',
     'Enter title' => 'Введите название',
     'Enter description' => 'Введите описание',
+    'Today' => 'Сегодня',
+    'Yesterday' => 'Вчера',
+    'Total' => 'Всего',
+    'Number of executed tasks' => 'Выполнено заданий',
+    'Number of added tasks' => 'Добавлено заданий',
+    'Payments to system' => 'Отчислено системе',
+    'Payments to executors' => 'Отчислено исполнителям'
 );
 
 function translate($string) {

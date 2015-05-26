@@ -18,6 +18,7 @@ AppConfigs.configureApp = function () {
         login: 'login',
         logout: 'logout',
         'update-profile': 'update-profile',
+        'system-stats': 'system-stats',
 
         'clients-list': 'clients-list',
         'clients-list-info': 'clients-list-info',

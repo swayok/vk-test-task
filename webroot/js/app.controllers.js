@@ -23,23 +23,27 @@ AppController.logout = function () {
         method: 'GET'
     }).done(function () {
         App.setRoute('login');
-    }).fail(function (xhr) {
-        if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-            AppComponents.setErrorMessageFromXhr(xhr);
-        }
-    }).always(function () {
+    }).fail(
+        App.handleAjaxFail
+    ).always(function () {
         App.isLoading(false);
     });
 };
 
 AppController.adminDashboard = function (template, isFromCache) {
     AppComponents.displayNavigationMenu();
-    // todo: request dasboard data from api
     App.isLoading(true);
-    $.when(App.getUser()).done(function (admin) {
-        var html = template({admin: admin});
+    var request = $.ajax({
+        url: App.getApiUrl('system-stats'),
+        dataType: 'json',
+        cache: false
+    });
+    $.when(request).done(function (stats) {
+        var html = template({stats: stats});
         App.container.html(html);
-    }).always(function () {
+    }).fail(
+        App.handleAjaxFail
+    ).always(function () {
         App.isLoading(false);
     });
 };

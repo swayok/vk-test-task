@@ -11,10 +11,11 @@ require_once __DIR__ . '/../api/api.executor.actions.php';
 
 function getTestsList() {
     return array(
-//        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
-//        'Admin: Users management, authorisation and data retrieving' => __NAMESPACE__ . '\usersManagementAndDataRetrieving',
-//        'Client: Tasks management and data retrieving' => __NAMESPACE__ . '\clientTasksManagementAndDataRetrieving',
-        'Executor: Tasks execution and data retrieving' => __NAMESPACE__ . '\executorTasksManagementAndDataRetrieving'
+        'Login status & is authorised as role' => __NAMESPACE__ . '\loginStatus',
+        'Admin: Users management, authorisation and data retrieving' => __NAMESPACE__ . '\usersManagementAndDataRetrieving',
+        'Admin: system stats' => __NAMESPACE__ . '\adminSystemStats',
+        'Client: Tasks management and data retrieving' => __NAMESPACE__ . '\clientTasksManagementAndDataRetrieving',
+        'Executor: Tasks execution and data retrieving' => __NAMESPACE__ . '\executorTasksManagementAndDataRetrieving',
     );
 }
 
@@ -841,7 +842,7 @@ function clientTasksManagementAndDataRetrieving() {
     );
     \TestTools\addTestResult("get client tasks list info", $success, $response);
 
-    \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `title` LIKE '@testtask%'");
+    \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `description` LIKE '@testtask%'");
 
     return \TestTools\getTestResults(true);
 }
@@ -1058,7 +1059,33 @@ function executorTasksManagementAndDataRetrieving() {
     );
     \TestTools\addTestResult('executed task payment to system', $success, $response);
 
-    \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `title` LIKE '@testtask%'");
+    \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `description` LIKE '@testtask%'");
+
+    return \TestTools\getTestResults(true);
+}
+
+function adminSystemStats() {
+    \TestTools\cleanTestResults();
+    \Api\CommonActions\_unsetAuthorisation();
+
+    $admin = getTestUser('admin');
+    \Api\CommonActions\_setAuthorisedUser($admin);
+
+    $GLOBALS['__REQUEST_INFO']['isPost'] = false;
+    $GLOBALS['__REQUEST_INFO']['isGet'] = true;
+    $_POST = array();
+    $_GET = array();
+
+    $response = \Api\AdminActions\systemStats();
+    $success = (
+        \TestTools\assertHasKeys($response, array(
+            'tasks_total', 'tasks_added_today', 'tasks_added_yesterday', 'tasks_pending_total',
+            'tasks_executed_total', 'system_earned_total', 'executors_earned_total', 'tasks_executed_today',
+            'system_earned_today', 'executors_earned_today', 'tasks_executed_yesterday',
+            'system_earned_yesterday', 'executors_earned_yesterday'
+        ))
+    );
+    \TestTools\addTestResult('system stats', $success, $response);
 
     return \TestTools\getTestResults(true);
 }

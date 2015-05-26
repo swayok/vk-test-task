@@ -9,7 +9,7 @@ require_once __DIR__ . '/../src/configs/bootstrap.php';
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="shortcut icon" href="favicon.ico" />
 
-    <title>Система заказов</title>
+    <title><?php echo \Dictionary\translate('Order execution system'); ?></title>
 
     <link rel="stylesheet" href="/css/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/bootstrap/css/bootstrap-theme.min.css">

@@ -95,11 +95,7 @@ AppComponents.displayNavigationMenu = function (rerender) {
                 AppComponents.navigationMenus.container.html(navHtml);
                 AppComponents.activateNavigationMenuButton(App.currentRoute);
                 AppComponents.navigationMenus.currentSection = section;
-            }).fail(function (xhr) {
-                if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-                    AppComponents.setErrorMessageFromXhr(xhr);
-                }
-            });
+            }).fail(App.handleAjaxFail);
             return true;
         }
     } else {
@@ -140,7 +136,7 @@ AppComponents.initForm = function (onSuccessCallback) {
     var form = App.container.find('form[data-api-action]');
     form.on('submit', function (event) {
         AppComponents.removeFormValidationErrors(form, true);
-        form.addClass('loading');
+        form.addClass('loading has-loader no-delay');
         var data = AppComponents.collectFormData(form);
         $.ajax({
             url: App.getApiUrl(form.attr('data-api-action')),
@@ -170,11 +166,9 @@ AppComponents.initForm = function (onSuccessCallback) {
                     App.setRoute(json._route);
                 }
             }
-        }).fail(function (xhr) {
-            if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-                AppComponents.applyFormValidationErrors(form, xhr);
-            }
-        }).always(function () {
+        }).fail(
+            App.handleAjaxFail
+        ).always(function () {
             setTimeout(function () {
                 form.removeClass('loading');
             }, 200);
@@ -304,7 +298,7 @@ AppComponents.dataGridApplyEventHandlers = function (dataSourceApiAction) {
             App.setRoute($el.attr('data-route'), urlArgs);
         } else if ($el.attr('data-api-action')) {
             var method = $el.attr('data-method') || 'GET';
-            AppComponents.dataGrid.tableContainer.addClass('loading');
+            AppComponents.dataGrid.tableContainer.addClass('loading has-loader');
             var apiAction = $el.attr('data-api-action');
             $.ajax({
                 url: App.getApiUrl(apiAction),
@@ -321,11 +315,9 @@ AppComponents.dataGridApplyEventHandlers = function (dataSourceApiAction) {
                     'dataGridApiActionComplete:' + apiAction,
                     {element: $el, data: json, queryArgs: queryArgs}
                 );
-            }).fail(function (xhr) {
-                if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-                    AppComponents.setErrorMessageFromXhr(xhr);
-                }
-            }).always(function () {
+            }).fail(
+                App.handleAjaxFail
+            ).always(function () {
                 AppComponents.dataGrid.tableContainer.removeClass('loading');
             });
         } else {
@@ -348,14 +340,12 @@ AppComponents.dataGridLoadRecords = function (dataSourceApiAction, returnDeferre
         App.currentUrlArgs.page = AppComponents.dataGrid.paginationInfo.page;
         App._changeBrowserUrl();
     }
-    AppComponents.dataGrid.tableContainer.addClass('loading');
+    AppComponents.dataGrid.tableContainer.addClass('loading has-loader');
     request.done(function (items) {
         AppComponents.dataGrid.tableContainer.html(AppComponents.dataGrid.template({items: items}));
-    }).fail(function (xhr) {
-        if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
-            AppComponents.setErrorMessageFromXhr(xhr);
-        }
-    }).always(function () {
+    }).fail(
+        App.handleAjaxFail
+    ).always(function () {
         setTimeout(function () {
             AppComponents.dataGrid.tableContainer.removeClass('loading');
         }, App.animationsDurationMs);

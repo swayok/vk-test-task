@@ -14,7 +14,7 @@
         <div class="collapse navbar-collapse" id="admin-navigation-links">
             <ul class="nav navbar-nav">
                 <li>
-                    <a href="/?route=admin-dashboard"><?php echo \Dictionary\translate('Dashboard'); ?></a>
+                    <a href="/?route=admin-dashboard"><?php echo \Dictionary\translate('System Stats'); ?></a>
                 </li>
                 <li>
                     <a href="/?route=admin-clients-list"><?php echo \Dictionary\translate('Clients'); ?></a>

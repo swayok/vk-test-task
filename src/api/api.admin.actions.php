@@ -287,3 +287,44 @@ function usersListInfo($role) {
         'items_per_page' => DATA_GRID_ITEMS_PER_PAGE
     );
 }
+
+function systemStats() {
+    if (!\Api\CommonActions\_isAuthorisedAs('admin')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isGet()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $todayStart = \Db\quoteValue(date('d-m-Y 00:00:00'));
+    $todayEnd = \Db\quoteValue(date('d-m-Y 23:59:59'));
+    $todayBetween = "BETWEEN $todayStart AND $todayEnd";
+    $yesterdayStart = \Db\quoteValue(date('d-m-Y 00:00:00', strtotime('-1 day')));
+    $yesterdayEnd = \Db\quoteValue(date('d-m-Y 23:59:59', strtotime('-1 day')));
+    $yesterdayBetween = "BETWEEN $yesterdayStart AND $yesterdayEnd";
+    $ret = array(
+        'tasks_total' => \Db\selectValue('SELECT COUNT(*) FROM `vktask2`.`tasks`'),
+        'tasks_added_today' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE `created_at` $todayBetween"),
+        'tasks_added_yesterday' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE `created_at` $yesterdayBetween"),
+        'tasks_pending_total' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE `is_active` = 1 AND `executor_id` IS NULL"),
+    );
+    $rows = \Db\select("SELECT COUNT(*) as 'tasks_executed_total', SUM(`paid_to_system`) as 'system_earned_total', " .
+        "SUM(`paid_to_executor`) as 'executors_earned_total' FROM `vktask2`.`tasks` WHERE `executor_id` IS NOT NULL"
+    );
+    $ret += $rows[0];
+    $rows = \Db\select("SELECT COUNT(*) as 'tasks_executed_today', SUM(`paid_to_system`) as 'system_earned_today', " .
+        "SUM(`paid_to_executor`) as 'executors_earned_today' FROM `vktask2`.`tasks` " .
+        "WHERE `executor_id` IS NOT NULL AND `executed_at` $todayBetween"
+    );
+    $ret += $rows[0];
+    $rows = \Db\select("SELECT COUNT(*) as 'tasks_executed_yesterday', SUM(`paid_to_system`) as 'system_earned_yesterday', " .
+        "SUM(`paid_to_executor`) as 'executors_earned_yesterday' FROM `vktask2`.`tasks` " .
+        "WHERE `executor_id` IS NOT NULL AND `executed_at` $yesterdayBetween"
+    );
+    $ret += $rows[0];
+    foreach ($ret as $key => &$value) {
+        if (empty($value)) {
+            $value = '0';
+        }
+    }
+    return $ret;
+}

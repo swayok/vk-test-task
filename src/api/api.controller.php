@@ -44,6 +44,8 @@ function runAction($action) {
                     'get-executor' => '\Api\AdminActions\getExecutor',
                     'add-executor' => '\Api\AdminActions\addExecutor',
                     'update-executor' => '\Api\AdminActions\updateExecutor',
+
+                    'system-stats' => '\Api\AdminActions\systemStats'
                 );
                 break;
             case 'client':
