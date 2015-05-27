@@ -35,10 +35,10 @@
         <tr>
             <td>{{= item.id }}</td>
             <td class="item-title">
-                {{= item.title }}
+                {{! item.title }}
                 <a class="item-description-container" href="javascript: void(0)">
                     <span class="glyphicon glyphicon-info-sign"></span>
-                    <div class="item-description">{{=item.description}}</div>
+                    <div class="item-description">{{! item.description }}</div>
                 </a>
             </td>
             <td>{{= item.payment }} <?php echo \Dictionary\translate('RUB'); ?></td>
@@ -56,7 +56,7 @@
             {{? item.is_active == 0 }}
                 <td class="danger"><?php echo \Dictionary\translate('Inactive'); ?></td>
             {{?}}
-            <td>{{= item.executor_email || '' }}</td>
+            <td>{{! item.executor_email || '' }}</td>
             <td class="actions">
                 {{? !item.executor_id }}
                     <a data-route="client-task-edit" data-args="id={{=item.id}}"

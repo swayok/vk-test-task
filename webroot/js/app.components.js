@@ -166,9 +166,11 @@ AppComponents.initForm = function (onSuccessCallback) {
                     App.setRoute(json._route);
                 }
             }
-        }).fail(
-            App.handleAjaxFail
-        ).always(function () {
+        }).fail(function (xhr) {
+            if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
+                AppComponents.applyFormValidationErrors(form, xhr);
+            }
+        }).always(function () {
             setTimeout(function () {
                 form.removeClass('loading');
             }, 200);

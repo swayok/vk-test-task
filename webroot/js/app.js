@@ -249,5 +249,7 @@ App.isNotInternalServerError = function (xhr) {
 App.handleAjaxFail = function (xhr) {
     if (App.isNotAuthorisationFailure(xhr) && App.isNotInternalServerError(xhr)) {
         AppComponents.setErrorMessageFromXhr(xhr);
+        return true;
     }
+    return false;
 };

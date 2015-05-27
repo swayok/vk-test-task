@@ -36,7 +36,7 @@ $__TRANSLATIONS = array(
     'From' => 'из',
     'Newer' => 'Новее',
     'Older' => 'Старее',
-    'Edit' => 'Редактировать',
+    'Edit' => 'Изменить',
     'Activate' => 'Активировать',
     'Deactivate' => 'Деактивировать',
     'Status' => 'Состояние',
@@ -81,7 +81,7 @@ $__TRANSLATIONS = array(
     'Task created successfully' => 'Задание создано успешно',
     'Can be executed' => 'Может быть выполнено',
     'Task creation' => 'Создание задания',
-    'Task editing' => 'Создание задания',
+    'Task editing' => 'Редактирование задания',
     'Description' => 'Описание',
     'Title' => 'Название',
     'Payment' => 'Оплата за выполнение',
@@ -111,7 +111,8 @@ $__TRANSLATIONS = array(
     'Failed to delete task' => 'Не удалось удалить задание',
     'Task successfully deleted' => 'Задание успешно удалено',
     'Executed task cannot be deleted' => 'Выполненное задание не может быть удалено',
-    'Delete' => 'Удалить'
+    'Delete' => 'Удалить',
+    'Task updated successfully' => 'Задание обновлено успешно'
 );
 
 function translate($string) {

@@ -38,10 +38,10 @@
         <tr>
             <td>{{= item.id }}</td>
             <td class="item-title">
-                {{= item.title }}
+                {{! item.title }}
                 <a class="item-description-container" href="javascript: void(0)">
                     <span class="glyphicon glyphicon-info-sign"></span>
-                    <div class="item-description">{{=item.description}}</div>
+                    <div class="item-description">{{! item.description }}</div>
                 </a>
             </td>
             <td>
@@ -52,7 +52,7 @@
                 <?php endif; ?>
                 <?php echo \Dictionary\translate('RUB'); ?>
             </td>
-            <td>{{= item.client_email }}</td>
+            <td>{{! item.client_email }}</td>
             <td>{{= item.created_at }}</td>
             <?php if ($forExecutedTasks): ?>
                 <td>{{= item.executed_at }}</td>
