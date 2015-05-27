@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../src/configs/bootstrap.php';
+require_once __DIR__ . '/../src/api/api.controller.php';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -31,7 +32,10 @@ require_once __DIR__ . '/../src/configs/bootstrap.php';
     <script src="/js/app.controllers.js"></script>
     <script src="/js/app.js"></script>
     <script>
-        App.init(<?php echo json_encode($_GET); ?>);
+        App.init(
+            <?php echo json_encode($_GET, JSON_UNESCAPED_UNICODE); ?>,
+            <?php echo json_encode(\Api\Controller\runAction('status'), JSON_UNESCAPED_UNICODE); ?>
+        );
     </script>
 </body>
 </html>

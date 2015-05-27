@@ -295,16 +295,16 @@ function systemStats() {
     if (!\Request\isGet()) {
         \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
     }
-    $todayStart = \Db\quoteValue(date('d-m-Y 00:00:00'));
-    $todayEnd = \Db\quoteValue(date('d-m-Y 23:59:59'));
+    $todayStart = \Db\quoteValue(strtotime(date('d-m-Y 00:00:00')));
+    $todayEnd = \Db\quoteValue(strtotime(date('d-m-Y 23:59:59')));
     $todayBetween = "BETWEEN $todayStart AND $todayEnd";
-    $yesterdayStart = \Db\quoteValue(date('d-m-Y 00:00:00', strtotime('-1 day')));
-    $yesterdayEnd = \Db\quoteValue(date('d-m-Y 23:59:59', strtotime('-1 day')));
+    $yesterdayStart = \Db\quoteValue(strtotime(date('d-m-Y 00:00:00', strtotime('-1 day'))));
+    $yesterdayEnd = \Db\quoteValue(strtotime(date('d-m-Y 23:59:59', strtotime('-1 day'))));
     $yesterdayBetween = "BETWEEN $yesterdayStart AND $yesterdayEnd";
     $ret = array(
         'tasks_total' => \Db\selectValue('SELECT COUNT(*) FROM `vktask2`.`tasks`'),
-        'tasks_added_today' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE `created_at` $todayBetween"),
-        'tasks_added_yesterday' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE `created_at` $yesterdayBetween"),
+        'tasks_added_today' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE UNIX_TIMESTAMP(`created_at`) $todayBetween"),
+        'tasks_added_yesterday' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE UNIX_TIMESTAMP(`created_at`) $yesterdayBetween"),
         'tasks_pending_total' => \Db\selectValue("SELECT COUNT(*) FROM `vktask2`.`tasks` WHERE `is_active` = 1 AND `executor_id` IS NULL"),
     );
     $rows = \Db\select("SELECT COUNT(*) as 'tasks_executed_total', SUM(`paid_to_system`) as 'system_earned_total', " .
@@ -313,12 +313,12 @@ function systemStats() {
     $ret += $rows[0];
     $rows = \Db\select("SELECT COUNT(*) as 'tasks_executed_today', SUM(`paid_to_system`) as 'system_earned_today', " .
         "SUM(`paid_to_executor`) as 'executors_earned_today' FROM `vktask2`.`tasks` " .
-        "WHERE `executor_id` IS NOT NULL AND `executed_at` $todayBetween"
+        "WHERE `executor_id` IS NOT NULL AND UNIX_TIMESTAMP(`executed_at`) $todayBetween"
     );
     $ret += $rows[0];
     $rows = \Db\select("SELECT COUNT(*) as 'tasks_executed_yesterday', SUM(`paid_to_system`) as 'system_earned_yesterday', " .
         "SUM(`paid_to_executor`) as 'executors_earned_yesterday' FROM `vktask2`.`tasks` " .
-        "WHERE `executor_id` IS NOT NULL AND `executed_at` $yesterdayBetween"
+        "WHERE `executor_id` IS NOT NULL AND UNIX_TIMESTAMP(`executed_at`) $yesterdayBetween"
     );
     $ret += $rows[0];
     foreach ($ret as $key => &$value) {

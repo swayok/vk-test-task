@@ -99,7 +99,7 @@ AppController.adminUserForm = function (template, role, editMode, isFromCache) {
 AppController.profileForm = function (template, role, isFromCache) {
     AppComponents.displayNavigationMenu();
     App.isLoading(true);
-    $.when(App.getUser(true))
+    $.when(App.getUser(true, false))
         .done(function (item) {
             App.container.html(template({item: item}));
             AppComponents.initForm();

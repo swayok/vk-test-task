@@ -29,5 +29,9 @@ try {
     }
 }
 
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+}
+
 echo json_encode($response, JSON_UNESCAPED_UNICODE);
 exit;

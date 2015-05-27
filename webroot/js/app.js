@@ -16,7 +16,7 @@ var App = {
     baseBrowserTitle: ''
 };
 
-App.init = function (urlArgs) {
+App.init = function (urlArgs, userInfo) {
     if (!!urlArgs && $.isPlainObject(urlArgs)) {
         App.initialUrlArgs = urlArgs;
     }
@@ -46,7 +46,11 @@ App.init = function (urlArgs) {
             }
         }, false);
 
-        App.getUser();
+        if (userInfo && userInfo.id) {
+            App.setUser(userInfo, true);
+        } else {
+            App.getUser(true, true);
+        }
     });
 };
 
@@ -69,14 +73,25 @@ App.getRouteUrl = function (route, urlArgs) {
     return App.baseUrl + '?' + $.param(urlArgs);
 };
 
-App.setUser = function (userInfo) {
+App.setUser = function (userInfo, initRoute) {
     App.userInfo = userInfo;
+    if (!!initRoute) {
+        if (!!App.initialUrlArgs.route && !!App.routes[App.initialUrlArgs.route] && App.initialUrlArgs.route !== 'login') {
+            App.setRoute(App.initialUrlArgs.route, App.initialUrlArgs);
+            App.initialUrlArgs = {};
+        } else if (!!App.userInfo._route && !!App.routes[App.userInfo._route]) {
+            App.setRoute(App.userInfo._route);
+        } else {
+            App.setRoute('login');
+            return;
+        }
+    }
     if (App.currentRoute && App.routes[App.currentRoute].section) {
         AppComponents.displayNavigationMenu(true);
     }
 };
 
-App.getUser = function (reload) {
+App.getUser = function (reload, initRouteWhenLoaded) {
     if (!$.isPlainObject(App.userInfo) || reload) {
         var deferred = $.Deferred();
         $.ajax({
@@ -84,18 +99,7 @@ App.getUser = function (reload) {
             cache: false,
             dataType: 'json'
         }).done(function (json) {
-            if (!reload) {
-                if (!!App.initialUrlArgs.route && !!App.routes[App.initialUrlArgs.route] && App.initialUrlArgs.route !== 'login') {
-                    App.setRoute(App.initialUrlArgs.route, App.initialUrlArgs);
-                    App.initialUrlArgs = {};
-                } else if (!!json._route && !!App.routes[json._route]) {
-                    App.setRoute(json._route);
-                } else {
-                    App.setRoute('login');
-                    return;
-                }
-            }
-            App.setUser(json);
+            App.setUser(json, !!initRouteWhenLoaded);
             deferred.resolve(App.userInfo);
         }).fail(function (xhr) {
             App.setRoute('login');
