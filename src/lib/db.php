@@ -151,7 +151,9 @@ function getQueryError($connectionName = 'default') {
  * @throws \Exception
  */
 function quoteValue($value, $connectionName = 'default') {
-    if (is_bool($value)) {
+    if ($value === null) {
+        return 'NULL';
+    } else if (is_bool($value)) {
         return $value ? '1' : '0';
     } if (!is_int($value) && !is_float($value)) {
         $connection = getConnection($connectionName);

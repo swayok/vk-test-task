@@ -18,7 +18,7 @@
                     </li>
                     <li class="list-group-item">
                         <?php echo \Dictionary\translate('Total') ?>
-                        <span class="badge">{{= it.stats.tasks_total }}</span>
+                        <span class="badge">{{= it.stats.tasks_executed_total }}</span>
                     </li>
                 </ul>
             </div>
@@ -39,7 +39,7 @@
                     </li>
                     <li class="list-group-item">
                         <?php echo \Dictionary\translate('Total') ?>
-                        <span class="badge">{{= it.stats.tasks_executed_total }}</span>
+                        <span class="badge">{{= it.stats.tasks_total }}</span>
                     </li>
                 </ul>
             </div>
