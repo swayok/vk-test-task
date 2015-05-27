@@ -204,10 +204,13 @@ function getTask() {
     }
     try {
         $client = \Api\CommonActions\_getAuthorisedUser();
-        $rows = \Db\smartSelect("SELECT * FROM `vktask2`.`tasks` WHERE `id` = :id AND client_id = :client_id", array(
-            'id' => $_GET['id'],
-            'client_id' => $client['id']
-        ));
+        $rows = \Db\smartSelect(
+            "SELECT * FROM `vktask2`.`tasks` WHERE `id` = :id AND client_id = :client_id",
+            array(
+                'id' => $_GET['id'],
+                'client_id' => $client['id']
+            )
+        );
         if (empty($rows)) {
             \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
             return array(
@@ -230,6 +233,68 @@ function getTask() {
             ));
             $task = array_intersect_key($task, $fields);
             return $task;
+        }
+    } catch (\Exception $exc) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+        return array('_message' => $exc->getMessage());
+    }
+}
+
+function deleteTask() {
+    if (!\Api\CommonActions\_isAuthorisedAs('client')) {
+        \Api\Controller\terminateUnauthorisedRequest();
+    }
+    if (!\Request\isGet()) {
+        \Utils\terminate(\Utils\HTTP_CODE_NOT_FOUND);
+    }
+    $errors = \Utils\validateData($_GET, array(
+        'id' => array(
+            'required' => true,
+            'type' => 'id',
+            'convert' => true,
+            'messages' => array(
+                'required' => \Dictionary\translate('ID is required'),
+                'type' => \Dictionary\translate('Invalid value'),
+            )
+        )
+    ));
+    if (!empty($errors)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_INVALID);
+        return array('errors' => $errors, '_message' => \Dictionary\translate('Invalid request data'));
+    }
+    try {
+        $client = \Api\CommonActions\_getAuthorisedUser();
+        $rows = \Db\smartSelect(
+            "SELECT `id`, `executor_id` FROM `vktask2`.`tasks` WHERE `id` = :id AND client_id = :client_id",
+            array(
+                'id' => $_GET['id'],
+                'client_id' => $client['id']
+            )
+        );
+        if (empty($rows)) {
+            \Utils\setHttpCode(\Utils\HTTP_CODE_NOT_FOUND);
+            return array(
+                '_message' => \Dictionary\translate('Record with passed ID was not found in DB'),
+                'errors' => array(
+                    'id' => \Dictionary\translate('Invalid value')
+                )
+            );
+        } else {
+            $task = $rows[0];
+            if ($task['executor_id'] > 0) {
+                \Utils\setHttpCode(\Utils\HTTP_CODE_CONFLICT);
+                return array(
+                    '_message' => \Dictionary\translate('Executed task cannot be deleted'),
+                );
+            }
+            $success = \Db\query('DELETE FROM `vktask2`.`tasks` WHERE `id` = ' . $task['id']);
+            if (!$success) {
+                \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);
+                return array(
+                    '_message' => \Dictionary\translate('Failed to delete task'),
+                );
+            }
+            return array('_message' => \Dictionary\translate('Task successfully deleted'));
         }
     } catch (\Exception $exc) {
         \Utils\setHttpCode(\Utils\HTTP_CODE_INTERNAL_SERVER_ERRORR);

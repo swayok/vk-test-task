@@ -54,6 +54,7 @@ function runAction($action) {
                     'get-task' => '\Api\ClientActions\getTask',
                     'add-task' => '\Api\ClientActions\addTask',
                     'update-task' => '\Api\ClientActions\updateTask',
+                    'delete-task' => '\Api\ClientActions\deleteTask',
                     'client-tasks-list' => '\Api\ClientActions\tasksList',
                     'client-tasks-list-info' => '\Api\ClientActions\tasksListInfo',
                 );

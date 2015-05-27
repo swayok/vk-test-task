@@ -78,6 +78,11 @@
                             <?php echo \Dictionary\translate('Activate'); ?>
                         </a>
                     {{?}}
+                    <a data-api-action="delete-task" data-args="id={{=item.id}}" data-method="get"
+                       class="delete-link btn btn-danger btn-sm" href="javascript:void(0)"
+                       title="<?php echo \Dictionary\translate('Delete'); ?>">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                    </a>
                 {{??}}
                     &nbsp;
                 {{?}}

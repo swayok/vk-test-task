@@ -41,6 +41,7 @@ AppConfigs.configureApp = function () {
         'get-task': 'get-task&not_executed=1&id=',
         'add-task': 'add-task',
         'update-task': 'update-task',
+        'delete-task': 'delete-task',
         'client-tasks-list': 'client-tasks-list',
         'client-tasks-list-info': 'client-tasks-list-info',
 

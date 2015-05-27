@@ -107,7 +107,11 @@ $__TRANSLATIONS = array(
     'Number of executed tasks' => 'Выполнено заданий',
     'Number of added tasks' => 'Добавлено заданий',
     'Payments to system' => 'Отчислено системе',
-    'Payments to executors' => 'Отчислено исполнителям'
+    'Payments to executors' => 'Отчислено исполнителям',
+    'Failed to delete task' => 'Не удалось удалить задание',
+    'Task successfully deleted' => 'Задание успешно удалено',
+    'Executed task cannot be deleted' => 'Выполненное задание не может быть удалено',
+    'Delete' => 'Удалить'
 );
 
 function translate($string) {

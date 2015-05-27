@@ -180,3 +180,15 @@ function assertErrorCode($expectedCode = null) {
     );
     return $GLOBALS['__LAST_TEST_DETAILS']['success'];
 }
+
+function assertIsNotErrorCode() {
+     $GLOBALS['__LAST_TEST_DETAILS'] = array(
+        'success' => http_response_code() < 400,
+        'message' => 'Unexpected HTTP Code',
+        'details' => array(
+            'http_code' => http_response_code(),
+            'db_query' => \Db\getLastQuery()
+        )
+    );
+    return $GLOBALS['__LAST_TEST_DETAILS']['success'];
+}

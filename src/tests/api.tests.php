@@ -842,6 +842,70 @@ function clientTasksManagementAndDataRetrieving() {
     );
     \TestTools\addTestResult("get client tasks list info", $success, $response);
 
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array();
+    $response = \Api\ClientActions\deleteTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult("delete task: no data sent", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => '');
+    $response = \Api\ClientActions\deleteTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult("delete task: empty values", $success, $response);
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => '-1');
+    $response = \Api\ClientActions\deleteTask();
+    $success = (
+        \TestTools\assertValidationErrors($response, array('id'))
+        && \TestTools\assertHasKeys($response, array('errors', '_message'))
+    );
+    \TestTools\addTestResult("delete task: invalid value", $success, $response);
+
+    $foreignTaskId = \Db\selectValue("SELECT `id` from `vktask2`.`tasks` WHERE `client_id` != {$client['id']} LIMIT 1");
+    if (!empty($foreignTaskId)) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+        $_GET = array('id' => $foreignTaskId);
+        $response = \Api\ClientActions\deleteTask();
+        $success = (
+            \TestTools\assertErrorCode(\Utils\HTTP_CODE_NOT_FOUND)
+            && \TestTools\assertHasKeys($response, array('errors', '_message'))
+            && \TestTools\assertHasKeys($response['errors'], array('id'))
+        );
+        \TestTools\addTestResult("delete task that belong to other user", $success, $response);
+    }
+
+    \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+    $_GET = array('id' => $taskId);
+    $response = \Api\ClientActions\deleteTask();
+    $success = (
+        \TestTools\assertErrorCode(\Utils\HTTP_CODE_CONFLICT)
+        && \TestTools\assertHasKeys($response, array('_message'))
+    );
+    \TestTools\addTestResult("try to delete executed task", $success, $response);
+
+    $success = \Db\query('UPDATE `vktask2`.`tasks` ' .
+        "SET `executor_id` = NULL, `executed_at` = NULL WHERE `id` = $taskId"
+    );
+    \TestTools\addTestResult('task update query: remove executor_id', $success, \Db\getLastQuery());
+    if ($success) {
+        \Utils\setHttpCode(\Utils\HTTP_CODE_OK);
+        $_GET = array('id' => $taskId);
+        $response = \Api\ClientActions\deleteTask();
+        $success = (
+            \TestTools\assertIsNotErrorCode()
+            && \TestTools\assertHasKeys($response, array('_message'))
+        );
+        \TestTools\addTestResult("delete task", $success, $response);
+    }
+
     \Db\query("DELETE FROM `vktask2`.`tasks` WHERE `description` LIKE '@testtask%'");
 
     return \TestTools\getTestResults(true);
