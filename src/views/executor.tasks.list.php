@@ -11,15 +11,15 @@
             <th><?php echo \Dictionary\translate('Payment'); ?></th>
             <th><?php echo \Dictionary\translate('Client'); ?></th>
             <th>
-                <?php echo \Dictionary\translate('Created at'); ?>
-                <?php if (!$forExecutedTasks): ?>
-                    <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
-                <?php endif; ?>
+                <?php echo \Dictionary\translate('Created at'); ?>&nbsp;<?php
+                    if (!$forExecutedTasks) {
+                        echo '<span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>';
+                    }
+                ?>
             </th>
             <?php if ($forExecutedTasks): ?>
                 <th>
-                    <?php echo \Dictionary\translate('Executed at'); ?>
-                    <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
+                    <?php echo \Dictionary\translate('Executed at'); ?>&nbsp;<span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
                 </th>
             <?php else: ?>
                 <th><?php echo \Dictionary\translate('Actions'); ?></th>

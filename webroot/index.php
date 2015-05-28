@@ -17,7 +17,7 @@ require_once __DIR__ . '/../src/api/api.controller.php';
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="page-container">
         <div id="page-content">
 
         </div>

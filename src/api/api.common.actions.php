@@ -167,6 +167,7 @@ function updateProfile() {
         $dataToUpdate['password'] = \Utils\hashPassword($dataToUpdate['password']);
     }
     if (empty($dataToUpdate)) {
+        $currentUser['_message'] = \Dictionary\translate('Your account updated successfully');
         return $currentUser;
     }
 

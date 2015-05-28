@@ -25,7 +25,7 @@ App.init = function (urlArgs, userInfo) {
 
     $(document).ready(function () {
         App.baseBrowserTitle = document.title;
-        App.container = $(App.container);
+        App.container = $(App.container).addClass('has-loader');
         AppComponents.init();
 
         $(document.body).on('click', 'a[href]', function () {
@@ -208,7 +208,7 @@ App._loadViewForRoute = function (route, routeInfo) {
 
 App.isLoading = function (yes) {
     if (yes || typeof yes === 'undefined') {
-        App.container.addClass('has-loader loading');
+        App.container.addClass('loading');
     } else {
         setTimeout(function () {
             App.container.removeClass('loading');

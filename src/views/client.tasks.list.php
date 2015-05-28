@@ -17,8 +17,7 @@
             <th><?php echo \Dictionary\translate('Task info'); ?></th>
             <th><?php echo \Dictionary\translate('Payment'); ?></th>
             <th>
-                <?php echo \Dictionary\translate('Created at'); ?>
-                <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
+                <?php echo \Dictionary\translate('Created at'); ?>&nbsp;<span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span>
             </th>
             <th><?php echo \Dictionary\translate('Status'); ?></th>
             <th><?php echo \Dictionary\translate('Executor'); ?></th>

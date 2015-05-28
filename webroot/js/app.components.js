@@ -22,10 +22,10 @@ AppComponents.init = function () {
     AppComponents.navigationMenus.container = $('<div id="page-navigation"></div>');
     App.container.before(AppComponents.navigationMenus.container);
 
-    AppComponents.messagesContainer = $('<div id="page-messages" title="click to hide"></div>').hide();
-    $(document.body).prepend(AppComponents.messagesContainer);
+    AppComponents.messagesContainer = $('<div id="page-messages" title="click to hide"></div>');
+    App.container.before(AppComponents.messagesContainer);
     AppComponents.messagesContainer.on('click', function () {
-        AppComponents.messagesContainer.slideUp();
+        AppComponents.hideMessage();
         return false;
     })
 };
@@ -39,7 +39,7 @@ AppComponents.setMessage = function (message, type) {
         if (!message) {
             return;
         }
-        message = $('<div class="container">').append(message);
+        message = $('<div>').append(message);
         AppComponents.messagesContainer.html('').append(message);
         if (!type) {
             type = 'info';
@@ -49,8 +49,8 @@ AppComponents.setMessage = function (message, type) {
                 type = 'info';
             }
         }
-        AppComponents.messagesContainer.attr('class', 'bg-' + type);
-        AppComponents.messagesContainer.slideDown(App.animationsDurationMs);
+        message.attr('class', 'container bg-' + type);
+        message.fadeIn(App.animationsDurationMs);
     });
 };
 
@@ -68,7 +68,7 @@ AppComponents.setErrorMessageFromXhr = function (xhr, isNotJson) {
 };
 
 AppComponents.hideMessage = function () {
-    return AppComponents.messagesContainer.slideUp(App.animationsDurationMs);
+    return AppComponents.messagesContainer.find('.container').fadeOut(App.animationsDurationMs);
 };
 
 AppComponents.displayNavigationMenu = function (rerender) {
@@ -133,10 +133,10 @@ AppComponents.getPaginationTemplate = function (data) {
 };
 
 AppComponents.initForm = function (onSuccessCallback) {
-    var form = App.container.find('form[data-api-action]');
+    var form = App.container.find('form[data-api-action]').addClass('has-loader no-delay');
     form.on('submit', function (event) {
         AppComponents.removeFormValidationErrors(form, true);
-        form.addClass('loading has-loader no-delay');
+        form.addClass('loading');
         var data = AppComponents.collectFormData(form);
         $.ajax({
             url: App.getApiUrl(form.attr('data-api-action')),
@@ -236,7 +236,7 @@ AppComponents.initDataGrid = function (dataGridTemplate, dataSourceApiAction, pa
     AppComponents.displayNavigationMenu();
     App.isLoading(true);
     AppComponents.dataGrid.template = dataGridTemplate;
-    AppComponents.dataGrid.tableContainer = $('<div class="data-grid-table-container"></div>');
+    AppComponents.dataGrid.tableContainer = $('<div class="data-grid-table-container has-loader"></div>');
     AppComponents.dataGrid.paginationContainer = $('<div class="data-grid-pagination-container"></div>');
     App.container.html(AppComponents.dataGrid.tableContainer).append(AppComponents.dataGrid.paginationContainer);
     // load data
@@ -300,7 +300,7 @@ AppComponents.dataGridApplyEventHandlers = function (dataSourceApiAction) {
             App.setRoute($el.attr('data-route'), urlArgs);
         } else if ($el.attr('data-api-action')) {
             var method = $el.attr('data-method') || 'GET';
-            AppComponents.dataGrid.tableContainer.addClass('loading has-loader');
+            AppComponents.dataGrid.tableContainer.addClass('loading');
             var apiAction = $el.attr('data-api-action');
             $.ajax({
                 url: App.getApiUrl(apiAction),
@@ -342,7 +342,7 @@ AppComponents.dataGridLoadRecords = function (dataSourceApiAction, returnDeferre
         App.currentUrlArgs.page = AppComponents.dataGrid.paginationInfo.page;
         App._changeBrowserUrl();
     }
-    AppComponents.dataGrid.tableContainer.addClass('loading has-loader');
+    AppComponents.dataGrid.tableContainer.addClass('loading');
     request.done(function (items) {
         AppComponents.dataGrid.tableContainer.html(AppComponents.dataGrid.template({items: items}));
     }).fail(
